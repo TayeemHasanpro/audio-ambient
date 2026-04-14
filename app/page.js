@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import Copilot from '@/components/Copilot';
 
 // --- WAV Encoder Helper ---
 function audioBufferToWav(buffer) {
@@ -510,6 +511,24 @@ export default function AudioAmbientApp() {
       setIsPlaying(true); // Auto play
   };
 
+  const applyMixerLevels = (newVolumes) => {
+      if (!newVolumes) return;
+      const mergedVols = { ...ALL_SOUNDS_FLAT.reduce((acc, sound) => ({ ...acc, [sound.id]: 0 }), {}) };
+      const newActive = [];
+      Object.keys(newVolumes).forEach(k => {
+          if (newVolumes[k] > 0) {
+              mergedVols[k] = newVolumes[k];
+              if (!newActive.includes(k)) {
+                  newActive.push(k);
+              }
+          }
+      });
+      setVolumes(mergedVols);
+      setActiveSoundIds(newActive);
+      setCurrentView('mixer');
+      setIsPlaying(true);
+  };
+
   // Audio Engine Hook
   useEffect(() => {
     ALL_SOUNDS_FLAT.forEach(sound => {
@@ -634,6 +653,8 @@ export default function AudioAmbientApp() {
       {currentView === 'home' && <HomePage navigateToMixer={() => setCurrentView('mixer')} navigateToLibrary={() => setCurrentView('library')} />}
       {currentView === 'library' && <LibraryPage setCurrentView={setCurrentView} savedSoundscapes={savedSoundscapes} onLoadSoundscape={onLoadSoundscape} />}
       {currentView === 'mixer' && <MixerPage {...mixerProps} />}
+
+      <Copilot applyMixerLevels={applyMixerLevels} />
 
       {/* Export Modal */}
       {isExportModalOpen && (
