@@ -247,49 +247,68 @@ const HomePage = ({ navigateToMixer, navigateToLibrary }) => (
   </main>
 );
 
-// --- Component: SideNavBar ---
+// --- Component: SideNavBar (Desktop) + BottomNav (Mobile) ---
 const SideNavBar = ({ currentView, setCurrentView }) => (
-  <nav className="fixed left-0 top-0 h-full w-64 z-50 flex flex-col p-8 bg-slate-950/60 backdrop-blur-2xl rounded-r-3xl">
-    <div className="mb-12">
-      <h2 className="text-xl font-serif text-primary">AudioAmbient</h2>
-      <p className="font-sans text-[10px] uppercase tracking-widest text-slate-500 mt-1">Deep Focus Active</p>
-    </div>
-    <ul className="space-y-4 flex-grow">
-      <li>
-        <button onClick={() => setCurrentView('library')} className={`w-full flex items-center gap-4 p-3 transition-colors rounded-xl ${currentView === 'library' ? 'text-cyan-400 font-bold bg-cyan-950/30' : 'text-slate-500 hover:text-cyan-200'}`}>
-          <span className="material-symbols-outlined">library_music</span>
-          <span className="font-sans text-xs uppercase tracking-widest">Library</span>
-        </button>
-      </li>
-      <li>
-        <button onClick={() => setCurrentView('mixer')} className={`w-full flex items-center gap-4 p-3 transition-colors rounded-xl ${currentView === 'mixer' ? 'text-cyan-400 font-bold bg-cyan-950/30' : 'text-slate-500 hover:text-cyan-200'}`}>
-          <span className="material-symbols-outlined">tune</span>
-          <span className="font-sans text-xs uppercase tracking-widest">Mixer</span>
-        </button>
-      </li>
-      <li>
-        <button onClick={() => setCurrentView('home')} className="w-full flex items-center gap-4 text-slate-500 hover:text-cyan-200 p-3 transition-colors rounded-xl">
-          <span className="material-symbols-outlined">home</span>
-          <span className="font-sans text-xs uppercase tracking-widest">Home View</span>
-        </button>
-      </li>
-    </ul>
-    <div className="mt-auto flex items-center gap-3 p-4 bg-surface-container-low/40 rounded-2xl">
-      <img alt="User profile" className="w-10 h-10 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmDOoB_MYUFLm-wI-1tDn356DQlWHUW4IizuQP-cqFxFllDloUDszyo0B1gbIcoEAJG9gAwtazabxGic8IYFerU_AkLij8oK5RCv178TzBUbN4NnZx3UAeieBhbM69Ip2UBmNhPzyjAYqitY1iGCruWLFfnMT2ImSHynwk9xQ-qL9OGy9Ux2_EryLG6cFBIFBGYVGRvqDegz_Iq7rGXXQTB33k9i4D9Ue-HCJUHslui0oymJLxxUS6jHIuwZPU5gMyMtuw-5XriMI"/>
-      <div className="overflow-hidden">
-        <p className="text-xs font-semibold truncate text-left text-on-surface">Alex Rivera</p>
-        <p className="text-[10px] text-slate-500 text-left">Premium Member</p>
+  <>
+    {/* Desktop Sidebar — hidden on mobile */}
+    <nav className="hidden md:flex fixed left-0 top-0 h-full w-64 z-50 flex-col p-8 bg-slate-950/60 backdrop-blur-2xl rounded-r-3xl">
+      <div className="mb-12">
+        <h2 className="text-xl font-serif text-primary">AudioAmbient</h2>
+        <p className="font-sans text-[10px] uppercase tracking-widest text-slate-500 mt-1">Deep Focus Active</p>
       </div>
-    </div>
-  </nav>
+      <ul className="space-y-4 flex-grow">
+        <li>
+          <button onClick={() => setCurrentView('library')} className={`w-full flex items-center gap-4 p-3 transition-colors rounded-xl ${currentView === 'library' ? 'text-cyan-400 font-bold bg-cyan-950/30' : 'text-slate-500 hover:text-cyan-200'}`}>
+            <span className="material-symbols-outlined">library_music</span>
+            <span className="font-sans text-xs uppercase tracking-widest">Library</span>
+          </button>
+        </li>
+        <li>
+          <button onClick={() => setCurrentView('mixer')} className={`w-full flex items-center gap-4 p-3 transition-colors rounded-xl ${currentView === 'mixer' ? 'text-cyan-400 font-bold bg-cyan-950/30' : 'text-slate-500 hover:text-cyan-200'}`}>
+            <span className="material-symbols-outlined">tune</span>
+            <span className="font-sans text-xs uppercase tracking-widest">Mixer</span>
+          </button>
+        </li>
+        <li>
+          <button onClick={() => setCurrentView('home')} className="w-full flex items-center gap-4 text-slate-500 hover:text-cyan-200 p-3 transition-colors rounded-xl">
+            <span className="material-symbols-outlined">home</span>
+            <span className="font-sans text-xs uppercase tracking-widest">Home View</span>
+          </button>
+        </li>
+      </ul>
+      <div className="mt-auto flex items-center gap-3 p-4 bg-surface-container-low/40 rounded-2xl">
+        <img alt="User profile" className="w-10 h-10 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmDOoB_MYUFLm-wI-1tDn356DQlWHUW4IizuQP-cqFxFllDloUDszyo0B1gbIcoEAJG9gAwtazabxGic8IYFerU_AkLij8oK5RCv178TzBUbN4NnZx3UAeieBhbM69Ip2UBmNhPzyjAYqitY1iGCruWLFfnMT2ImSHynwk9xQ-qL9OGy9Ux2_EryLG6cFBIFBGYVGRvqDegz_Iq7rGXXQTB33k9i4D9Ue-HCJUHslui0oymJLxxUS6jHIuwZPU5gMyMtuw-5XriMI"/>
+        <div className="overflow-hidden">
+          <p className="text-xs font-semibold truncate text-left text-on-surface">Alex Rivera</p>
+          <p className="text-[10px] text-slate-500 text-left">Premium Member</p>
+        </div>
+      </div>
+    </nav>
+
+    {/* Mobile Bottom Nav — visible only on mobile */}
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-950/90 backdrop-blur-2xl border-t border-white/5 flex justify-around items-center px-2 py-2 pb-safe">
+      <button onClick={() => setCurrentView('home')} className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${currentView === 'home' ? 'text-cyan-400' : 'text-slate-500'}`}>
+        <span className="material-symbols-outlined text-xl">home</span>
+        <span className="text-[9px] uppercase tracking-widest">Home</span>
+      </button>
+      <button onClick={() => setCurrentView('library')} className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${currentView === 'library' ? 'text-cyan-400' : 'text-slate-500'}`}>
+        <span className="material-symbols-outlined text-xl">library_music</span>
+        <span className="text-[9px] uppercase tracking-widest">Library</span>
+      </button>
+      <button onClick={() => setCurrentView('mixer')} className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${currentView === 'mixer' ? 'text-cyan-400' : 'text-slate-500'}`}>
+        <span className="material-symbols-outlined text-xl">tune</span>
+        <span className="text-[9px] uppercase tracking-widest">Mixer</span>
+      </button>
+    </nav>
+  </>
 );
 
 // --- Library View ---
 const LibraryPage = ({ setCurrentView, savedSoundscapes, onLoadSoundscape }) => (
-  <div className="ml-64 pt-32 px-12 pb-24 relative min-h-screen z-10">
-    <section className="mb-16">
-      <h1 className="text-6xl font-headline font-semibold text-on-surface mb-6 leading-tight">Explore Your <span className="italic font-normal text-primary">Sanctuary</span></h1>
-      <div className="flex flex-wrap gap-3 mt-8">
+  <div className="md:ml-64 pt-20 md:pt-32 px-4 md:px-12 pb-28 md:pb-24 relative min-h-screen z-10">
+    <section className="mb-10 md:mb-16">
+      <h1 className="text-4xl md:text-6xl font-headline font-semibold text-on-surface mb-4 md:mb-6 leading-tight">Explore Your <span className="italic font-normal text-primary">Sanctuary</span></h1>
+      <div className="flex flex-wrap gap-3 mt-4 md:mt-8">
         <button className="px-5 py-2 rounded-full text-xs font-label tracking-widest uppercase bg-primary text-on-primary glow-hover transition-all">#Focus</button>
         <button className="px-5 py-2 rounded-full text-xs font-label tracking-widest uppercase bg-surface-container-high text-on-surface-variant hover:bg-surface-bright transition-all">#DeepSleep</button>
         <button className="px-5 py-2 rounded-full text-xs font-label tracking-widest uppercase bg-surface-container-high text-on-surface-variant hover:bg-surface-bright transition-all">#Rain</button>
@@ -297,21 +316,22 @@ const LibraryPage = ({ setCurrentView, savedSoundscapes, onLoadSoundscape }) => 
     </section>
 
     <section className="mb-20">
-      <div className="flex justify-between items-end mb-8">
-        <h3 className="text-2xl font-headline text-on-surface">Recent Soundscapes</h3>
+      <div className="flex justify-between items-end mb-6 md:mb-8">
+        <h3 className="text-xl md:text-2xl font-headline text-on-surface">Recent Soundscapes</h3>
         <button className="text-primary text-xs uppercase tracking-widest font-label hover:opacity-70 transition-opacity">View History</button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
         {(savedSoundscapes && savedSoundscapes.length > 0 ? savedSoundscapes : []).map((item, i) => (
-          <div key={item.id || i} className="group relative rounded-3xl overflow-hidden aspect-[4/5] bg-surface-container transition-transform duration-500 hover:-translate-y-2 cursor-pointer" onClick={() => onLoadSoundscape(item)}>
+          <div key={item.id || i} className="group relative rounded-2xl md:rounded-3xl overflow-hidden aspect-[4/5] bg-surface-container transition-transform duration-500 hover:-translate-y-2 cursor-pointer" onClick={() => onLoadSoundscape(item)}>
             <img className="absolute inset-0 w-full h-full object-cover grayscale-[20%] group-hover:scale-110 transition-transform duration-700" src={item.image} alt={item.title}/>
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent"></div>
-            <div className="absolute inset-0 flex flex-col justify-end p-8 glass-panel opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-secondary mb-2">{item.tag}</span>
-              <h4 className="text-2xl font-headline text-on-surface mb-3">{item.title}</h4>
-              <p className="text-sm text-tertiary font-light mb-6 leading-relaxed">{item.desc || "A custom synthesized atmospheric soundscape."}</p>
-              <button className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-on-primary glow-hover transition-all">
-                <span className="material-symbols-outlined text-xl" style={{fontVariationSettings: "'FILL' 1"}}>play_arrow</span>
+            {/* Info always visible on mobile, hover on desktop */}
+            <div className="absolute inset-0 flex flex-col justify-end p-4 md:p-8">
+              <span className="text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-secondary mb-1 md:mb-2">{item.tag}</span>
+              <h4 className="text-base md:text-2xl font-headline text-on-surface mb-1 md:mb-3">{item.title}</h4>
+              <p className="hidden md:block text-sm text-tertiary font-light mb-6 leading-relaxed">{item.desc || "A custom synthesized atmospheric soundscape."}</p>
+              <button className="flex items-center justify-center w-9 h-9 md:w-12 md:h-12 rounded-full bg-primary text-on-primary glow-hover transition-all">
+                <span className="material-symbols-outlined text-base md:text-xl" style={{fontVariationSettings: "'FILL' 1"}}>play_arrow</span>
               </button>
             </div>
           </div>
@@ -352,66 +372,73 @@ const VerticalSliderLevel = ({ level, onChange, soundId }) => {
 // --- Mixer View ---
 const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlaying, setActiveSoundIds, handleVolumeChange, togglePlay, addToMixer, removeFromMixer, onExportClick, onSaveMix }) => {
   const activeMixerSounds = useMemo(() => activeSoundIds.map(id => SOUND_MAP[id]).filter(Boolean), [activeSoundIds]);
+  const [addSoundOpen, setAddSoundOpen] = useState(false);
 
   return (
-    <div className="ml-64 pt-32 px-12 pb-24 relative min-h-screen z-10 flex flex-col">
-      <header className="flex items-center justify-between whitespace-nowrap mb-10 glass-panel rounded-xl px-8 py-6 ambient-shadow">
+    <div className="md:ml-64 pt-20 md:pt-32 px-3 md:px-12 pb-28 md:pb-24 relative min-h-screen z-10 flex flex-col">
+      <header className="flex flex-wrap items-center justify-between gap-3 mb-6 md:mb-10 glass-panel rounded-xl px-4 md:px-8 py-4 md:py-6 ambient-shadow">
         <div className="flex flex-col gap-1">
-          <h2 className="text-on-surface text-4xl font-headline font-medium leading-tight tracking-[-0.02em]">Mixer Deck</h2>
-          <p className="text-secondary text-sm font-label tracking-[0.05em] uppercase">Now Playing</p>
+          <h2 className="text-on-surface text-2xl md:text-4xl font-headline font-medium leading-tight tracking-[-0.02em]">Mixer Deck</h2>
+          <p className="text-secondary text-xs md:text-sm font-label tracking-[0.05em] uppercase">Now Playing</p>
         </div>
-        <div className="flex items-center gap-6">
-          <button onClick={onSaveMix} className="flex items-center justify-center rounded-lg h-10 px-6 bg-primary/20 text-primary text-sm font-label tracking-[0.05em] uppercase hover:bg-primary/30 transition-colors gap-2 border border-primary/20 mr-2">
-            <span className="material-symbols-outlined text-sm">save</span> Auto-Save Mix
+        <div className="flex items-center gap-2 md:gap-6 flex-wrap">
+          <button onClick={onSaveMix} className="flex items-center justify-center rounded-lg h-9 md:h-10 px-3 md:px-6 bg-primary/20 text-primary text-xs md:text-sm font-label tracking-[0.05em] uppercase hover:bg-primary/30 transition-colors gap-2 border border-primary/20">
+            <span className="material-symbols-outlined text-sm">save</span>
+            <span className="hidden sm:inline">Save Mix</span>
           </button>
-          <button onClick={() => { setActiveSoundIds([]); setVolumes(v => Object.keys(v).reduce((acc, k) => ({...acc, [k]: 0}), {})) }} className="text-primary text-sm font-label tracking-[0.05em] uppercase hover:text-primary-fixed transition-colors">
-            Clear All
+          <button onClick={() => { setActiveSoundIds([]); setVolumes(v => Object.keys(v).reduce((acc, k) => ({...acc, [k]: 0}), {})) }} className="text-primary text-xs md:text-sm font-label tracking-[0.05em] uppercase hover:text-primary-fixed transition-colors">
+            Clear
           </button>
           
-          <div className="relative group/add">
-            <button className="flex items-center justify-center rounded-lg h-10 px-6 bg-surface-container-high text-on-surface text-sm font-label tracking-[0.05em] uppercase hover:bg-surface-bright transition-colors gap-2">
-                <span className="material-symbols-outlined text-sm">add</span> Add Sound
+          {/* Add Sound — click-to-toggle on mobile, hover on desktop */}
+          <div className="relative">
+            <button onClick={() => setAddSoundOpen(o => !o)} className="flex items-center justify-center rounded-lg h-9 md:h-10 px-3 md:px-6 bg-surface-container-high text-on-surface text-xs md:text-sm font-label tracking-[0.05em] uppercase hover:bg-surface-bright transition-colors gap-2">
+                <span className="material-symbols-outlined text-sm">add</span>
+                <span className="hidden sm:inline">Add Sound</span>
             </button>
-            <div className="absolute right-0 top-12 w-64 bg-surface-container-high rounded-xl p-4 shadow-2xl opacity-0 invisible group-hover/add:opacity-100 group-hover/add:visible transition-all z-20 max-h-64 overflow-y-auto">
-                {ALL_SOUNDS_FLAT.map(sound => (
-                    <div key={sound.id} onClick={() => !activeSoundIds.includes(sound.id) && addToMixer(sound.id)} className={`flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-surface-bright ${activeSoundIds.includes(sound.id) ? 'opacity-50' : ''}`}>
-                        <div className="flex items-center gap-3">
-                            <span className="material-symbols-outlined text-primary text-sm">{sound.icon}</span>
-                            <span className="text-sm font-medium">{sound.name}</span>
-                        </div>
-                        {activeSoundIds.includes(sound.id) && <span className="material-symbols-outlined text-primary text-xs">check</span>}
-                    </div>
-                ))}
-            </div>
+            {addSoundOpen && (
+              <div className="absolute right-0 top-11 w-64 bg-surface-container-high rounded-xl p-4 shadow-2xl z-20 max-h-64 overflow-y-auto">
+                  {ALL_SOUNDS_FLAT.map(sound => (
+                      <div key={sound.id} onClick={() => { if(!activeSoundIds.includes(sound.id)) addToMixer(sound.id); setAddSoundOpen(false); }} className={`flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-surface-bright ${activeSoundIds.includes(sound.id) ? 'opacity-50' : ''}`}>
+                          <div className="flex items-center gap-3">
+                              <span className="material-symbols-outlined text-primary text-sm">{sound.icon}</span>
+                              <span className="text-sm font-medium">{sound.name}</span>
+                          </div>
+                          {activeSoundIds.includes(sound.id) && <span className="material-symbols-outlined text-primary text-xs">check</span>}
+                      </div>
+                  ))}
+              </div>
+            )}
           </div>
 
-          <button onClick={togglePlay} className="flex items-center justify-center rounded-full size-14 bg-gradient-to-tr from-primary to-primary-container text-on-primary ambient-shadow hover:scale-105 transition-transform">
-            <span className="material-symbols-outlined text-3xl" style={{fontVariationSettings: "'FILL' 1"}}>{isPlaying ? 'pause' : 'play_arrow'}</span>
+          <button onClick={togglePlay} className="flex items-center justify-center rounded-full size-11 md:size-14 bg-gradient-to-tr from-primary to-primary-container text-on-primary ambient-shadow hover:scale-105 transition-transform">
+            <span className="material-symbols-outlined text-2xl md:text-3xl" style={{fontVariationSettings: "'FILL' 1"}}>{isPlaying ? 'pause' : 'play_arrow'}</span>
           </button>
-          <button onClick={onExportClick} className="flex items-center justify-center rounded-lg h-10 px-6 bg-surface-container-highest text-on-surface border border-outline-variant/15 text-sm font-label tracking-[0.05em] uppercase hover:bg-surface-bright transition-colors">
+          <button onClick={onExportClick} className="hidden sm:flex items-center justify-center rounded-lg h-9 md:h-10 px-3 md:px-6 bg-surface-container-highest text-on-surface border border-outline-variant/15 text-xs md:text-sm font-label tracking-[0.05em] uppercase hover:bg-surface-bright transition-colors">
             Export
           </button>
         </div>
       </header>
       
-      <div className="flex-1 w-full max-w-[1024px] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-min">
+      <div className="flex-1 w-full max-w-[1024px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 auto-rows-min">
         {activeMixerSounds.map(sound => (
-          <div key={sound.id} className="flex flex-col gap-4 rounded-xl glass-panel p-6 ambient-shadow relative group">
-            <button onClick={() => removeFromMixer(sound.id)} className="absolute top-4 right-4 text-on-surface-variant hover:text-error transition-colors opacity-0 group-hover:opacity-100 z-20">
-              <span className="material-symbols-outlined">close</span>
+          <div key={sound.id} className="flex flex-col gap-4 rounded-xl glass-panel p-4 md:p-6 ambient-shadow relative">
+            {/* Remove button always visible on mobile */}
+            <button onClick={() => removeFromMixer(sound.id)} className="absolute top-3 right-3 text-on-surface-variant hover:text-error transition-colors z-20 md:opacity-0 md:group-hover:opacity-100 opacity-100">
+              <span className="material-symbols-outlined text-base">close</span>
             </button>
             <div className="flex items-start justify-between z-10">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center justify-center size-12 rounded-full bg-surface-container-low text-primary">
-                  <span className="material-symbols-outlined text-2xl">{sound.icon}</span>
+              <div className="flex items-center gap-3 md:gap-4">
+                <div className="flex items-center justify-center size-10 md:size-12 rounded-full bg-surface-container-low text-primary">
+                  <span className="material-symbols-outlined text-xl md:text-2xl">{sound.icon}</span>
                 </div>
                 <div className="flex flex-col">
-                  <p className="text-on-surface text-lg font-headline font-medium leading-tight">{sound.name}</p>
+                  <p className="text-on-surface text-base md:text-lg font-headline font-medium leading-tight">{sound.name}</p>
                   <p className="text-secondary text-xs font-label tracking-[0.05em] uppercase">{sound.category}</p>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-6 mt-4 h-32 relative z-10">
+            <div className="flex items-center gap-4 md:gap-6 mt-2 md:mt-4 h-28 md:h-32 relative z-10">
               <VerticalSliderLevel level={volumes[sound.id] || 0} onChange={handleVolumeChange} soundId={sound.id} />
               <div 
                 className="w-full h-full bg-center bg-no-repeat bg-cover rounded-lg border border-outline-variant/15 relative overflow-hidden" 
@@ -423,10 +450,10 @@ const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlayin
           </div>
         ))}
         {activeMixerSounds.length === 0 && (
-            <div className="col-span-3 h-64 flex flex-col items-center justify-center border-2 border-dashed border-outline-variant/20 rounded-2xl text-on-surface-variant">
+            <div className="col-span-full h-64 flex flex-col items-center justify-center border-2 border-dashed border-outline-variant/20 rounded-2xl text-on-surface-variant">
                 <span className="material-symbols-outlined text-4xl mb-4 opacity-50">tune</span>
                 <p className="font-headline text-xl">Mixer is empty</p>
-                <p className="text-sm">Add sounds from the top right menu to build your sanctuary.</p>
+                <p className="text-sm text-center px-4">Tap + Add Sound to build your sanctuary.</p>
             </div>
         )}
       </div>
