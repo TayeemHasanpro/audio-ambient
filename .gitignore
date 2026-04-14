@@ -41,3 +41,6 @@ public/sounds/*.wav
 next-env.d.ts
 
 .vercel
+# maintenance
+db_setup.js
+/scripts
