@@ -284,7 +284,7 @@ const SideNavBar = ({ currentView, setCurrentView }) => (
 );
 
 // --- Library View ---
-const LibraryPage = ({ setCurrentView }) => (
+const LibraryPage = ({ setCurrentView, savedSoundscapes, onLoadSoundscape }) => (
   <div className="ml-64 pt-32 px-12 pb-24 relative min-h-screen z-10">
     <section className="mb-16">
       <h1 className="text-6xl font-headline font-semibold text-on-surface mb-6 leading-tight">Explore Your <span className="italic font-normal text-primary">Sanctuary</span></h1>
@@ -301,18 +301,14 @@ const LibraryPage = ({ setCurrentView }) => (
         <button className="text-primary text-xs uppercase tracking-widest font-label hover:opacity-70 transition-opacity">View History</button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {[
-          { title: "Midnight Peak", desc: "The quiet hum of mountain wind passing through ancient jagged ridges.", tag: "Atmospheric", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDdNCBwWRIG2ezLPSK2DJRVFh6Cyd5JB5JCdrFjbzL6Td4MfnRTAf_OF4SFzshtuId0WlvgQOK_WM7Gn1K1otYg24rSnNbRxnxxlHQCDPQpw1Mvg34NwYKSpyI0adrJdxIhzU3aqMlQN7_ErNmRcYYoXKMOuBT0K3a_FFT3_QXJJd1KxxGoLvEz-Jk7hEYKrfb_t0tTJt1vtOdggcuoCG9ksL0N9NVSZu1MVoLWmlFIZecCI-uvLQlGyWvUIsuo_1viI8G_0XeHLKw" },
-          { title: "Urban Raincoat", desc: "Soft rhythmic tapping of cold rain against a glass conservatory roof.", tag: "Nature", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDUCge0duWunMDITiI-sehdtVnopikgpzbM_iqYSPqc4W-9VRdw8KfeE0PUQo74uf2IhQV1oGKtQA7iLNRBDmpq8CXlbxNAAJWgAKAaelm5ubAKDAfx_udEZkejuqPeOk6ps8Da487Q-iYyZQ8s7dHZtZs4VQaIN2a-REbqah608oPd87u_uogFgv5AQ4pK1KotfWeC6j6kz2GB7UMN768SSgjfEvxFsch9J0n2ZpJLh4SmxV7tNTx34zf6gZkOekZDZ1j1zfikqYo" },
-          { title: "Ether Waves", desc: "Deep oscillating frequencies designed for neuro-architecture and focus.", tag: "Synthesized", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuATTuK3naI6tduIlrkiJb5sUEIhUWwrYe87b-7ogRXf7gyehv-OHiM16UI0xVQ4Iiq5yzBNfyBEYs6OPFNEdWIBSU5P1_pfGHjj8Teci4AqwJF6X6jKih2VovG-fwzJNvUiJa3zx3NXPEHymX7t8jXCudO1AAqDEnjkI55T8o9EFvJcD2L1Ih65g3bOiv1AdCKCj0saXPJhm5p4FyYDJgiQH3OwOJEen1vfQTMTE0l38B26_wtTDPTx2SVXqCo8bysoKjmPlt1NZbI" }
-        ].map((item, i) => (
-          <div key={i} className="group relative rounded-3xl overflow-hidden aspect-[4/5] bg-surface-container transition-transform duration-500 hover:-translate-y-2 cursor-pointer" onClick={() => setCurrentView('mixer')}>
+        {(savedSoundscapes && savedSoundscapes.length > 0 ? savedSoundscapes : []).map((item, i) => (
+          <div key={item.id || i} className="group relative rounded-3xl overflow-hidden aspect-[4/5] bg-surface-container transition-transform duration-500 hover:-translate-y-2 cursor-pointer" onClick={() => onLoadSoundscape(item)}>
             <img className="absolute inset-0 w-full h-full object-cover grayscale-[20%] group-hover:scale-110 transition-transform duration-700" src={item.image} alt={item.title}/>
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent"></div>
             <div className="absolute inset-0 flex flex-col justify-end p-8 glass-panel opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <span className="text-[10px] uppercase tracking-[0.2em] text-secondary mb-2">{item.tag}</span>
               <h4 className="text-2xl font-headline text-on-surface mb-3">{item.title}</h4>
-              <p className="text-sm text-tertiary font-light mb-6 leading-relaxed">{item.desc}</p>
+              <p className="text-sm text-tertiary font-light mb-6 leading-relaxed">{item.desc || "A custom synthesized atmospheric soundscape."}</p>
               <button className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-on-primary glow-hover transition-all">
                 <span className="material-symbols-outlined text-xl" style={{fontVariationSettings: "'FILL' 1"}}>play_arrow</span>
               </button>
@@ -353,7 +349,7 @@ const VerticalSliderLevel = ({ level, onChange, soundId }) => {
 };
 
 // --- Mixer View ---
-const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlaying, setActiveSoundIds, handleVolumeChange, togglePlay, addToMixer, removeFromMixer, onExportClick }) => {
+const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlaying, setActiveSoundIds, handleVolumeChange, togglePlay, addToMixer, removeFromMixer, onExportClick, onSaveMix }) => {
   const activeMixerSounds = useMemo(() => activeSoundIds.map(id => SOUND_MAP[id]).filter(Boolean), [activeSoundIds]);
 
   return (
@@ -364,6 +360,9 @@ const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlayin
           <p className="text-secondary text-sm font-label tracking-[0.05em] uppercase">Now Playing</p>
         </div>
         <div className="flex items-center gap-6">
+          <button onClick={onSaveMix} className="flex items-center justify-center rounded-lg h-10 px-6 bg-primary/20 text-primary text-sm font-label tracking-[0.05em] uppercase hover:bg-primary/30 transition-colors gap-2 border border-primary/20 mr-2">
+            <span className="material-symbols-outlined text-sm">save</span> Auto-Save Mix
+          </button>
           <button onClick={() => { setActiveSoundIds([]); setVolumes(v => Object.keys(v).reduce((acc, k) => ({...acc, [k]: 0}), {})) }} className="text-primary text-sm font-label tracking-[0.05em] uppercase hover:text-primary-fixed transition-colors">
             Clear All
           </button>
@@ -441,12 +440,75 @@ export default function AudioAmbientApp() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [volumes, setVolumes] = useState(ALL_SOUNDS_FLAT.reduce((acc, sound) => ({ ...acc, [sound.id]: 0 }), {}));
   const [activeSoundIds, setActiveSoundIds] = useState(['rain', 'ocean', 'forest']);
+  const [savedSoundscapes, setSavedSoundscapes] = useState([]);
   const audioRefs = useRef({});
 
   // Export Modal States
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [downloadDuration, setDownloadDuration] = useState(3);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // DB Fetch
+  useEffect(() => {
+    fetch('/api/soundscapes')
+      .then(res => res.json())
+      .then(data => {
+        if(Array.isArray(data)) setSavedSoundscapes(data);
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleSaveMix = async () => {
+    if(activeSoundIds.length === 0) return alert("Mixer is empty! Add sounds first.");
+    const title = prompt("Enter a name for your custom Soundscape:");
+    if (!title) return;
+    
+    // Pick generic aesthetic image
+    const images = [
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuDdNCBwWRIG2ezLPSK2DJRVFh6Cyd5JB5JCdrFjbzL6Td4MfnRTAf_OF4SFzshtuId0WlvgQOK_WM7Gn1K1otYg24rSnNbRxnxxlHQCDPQpw1Mvg34NwYKSpyI0adrJdxIhzU3aqMlQN7_ErNmRcYYoXKMOuBT0K3a_FFT3_QXJJd1KxxGoLvEz-Jk7hEYKrfb_t0tTJt1vtOdggcuoCG9ksL0N9NVSZu1MVoLWmlFIZecCI-uvLQlGyWvUIsuo_1viI8G_0XeHLKw",
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuDUCge0duWunMDITiI-sehdtVnopikgpzbM_iqYSPqc4W-9VRdw8KfeE0PUQo74uf2IhQV1oGKtQA7iLNRBDmpq8CXlbxNAAJWgAKAaelm5ubAKDAfx_udEZkejuqPeOk6ps8Da487Q-iYyZQ8s7dHZtZs4VQaIN2a-REbqah608oPd87u_uogFgv5AQ4pK1KotfWeC6j6kz2GB7UMN768SSgjfEvxFsch9J0n2ZpJLh4SmxV7tNTx34zf6gZkOekZDZ1j1zfikqYo",
+        "https://lh3.googleusercontent.com/aida-public/AB6AXuATTuK3naI6tduIlrkiJb5sUEIhUWwrYe87b-7ogRXf7gyehv-OHiM16UI0xVQ4Iiq5yzBNfyBEYs6OPFNEdWIBSU5P1_pfGHjj8Teci4AqwJF6X6jKih2VovG-fwzJNvUiJa3zx3NXPEHymX7t8jXCudO1AAqDEnjkI55T8o9EFvJcD2L1Ih65g3bOiv1AdCKCj0saXPJhm5p4FyYDJgiQH3OwOJEen1vfQTMTE0l38B26_wtTDPTx2SVXqCo8bysoKjmPlt1NZbI"
+    ];
+    
+    const activeVolumes = {};
+    activeSoundIds.forEach(id => {
+       if(volumes[id] > 0) activeVolumes[id] = volumes[id];
+    });
+
+    try {
+        const payload = {
+            title, tag: 'Custom', 
+            image: images[Math.floor(Math.random() * images.length)],
+            volumes: activeVolumes, 
+            active_sounds: Object.keys(activeVolumes)
+        };
+        const res = await fetch('/api/soundscapes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const newMix = await res.json();
+        setSavedSoundscapes([newMix, ...savedSoundscapes]);
+        alert("Soundscape uploaded to the cloud!");
+    } catch(err) {
+        console.error(err);
+        alert("Error saving soundscape to cloud database.");
+    }
+  };
+
+  const onLoadSoundscape = (soundscape) => {
+      // Load saved state
+      if (soundscape.active_sounds && soundscape.volumes) {
+          const newVols = { ...ALL_SOUNDS_FLAT.reduce((acc, sound) => ({ ...acc, [sound.id]: 0 }), {}) };
+          Object.keys(soundscape.volumes).forEach(k => {
+             newVols[k] = parseInt(soundscape.volumes[k]);
+          });
+          setVolumes(newVols);
+          setActiveSoundIds(soundscape.active_sounds);
+      }
+      setCurrentView('mixer');
+      setIsPlaying(true); // Auto play
+  };
 
   // Audio Engine Hook
   useEffect(() => {
@@ -558,7 +620,8 @@ export default function AudioAmbientApp() {
     togglePlay, 
     addToMixer: (id) => { handleVolumeChange(id, 30); }, 
     removeFromMixer: (id) => { setActiveSoundIds(p=>p.filter(s=>s!==id)); handleVolumeChange(id, 0); },
-    onExportClick: () => setIsExportModalOpen(true)
+    onExportClick: () => setIsExportModalOpen(true),
+    onSaveMix: handleSaveMix
   };
 
   return (
@@ -569,7 +632,7 @@ export default function AudioAmbientApp() {
       {currentView !== 'home' && <SideNavBar currentView={currentView} setCurrentView={setCurrentView} />}
       
       {currentView === 'home' && <HomePage navigateToMixer={() => setCurrentView('mixer')} navigateToLibrary={() => setCurrentView('library')} />}
-      {currentView === 'library' && <LibraryPage setCurrentView={setCurrentView} />}
+      {currentView === 'library' && <LibraryPage setCurrentView={setCurrentView} savedSoundscapes={savedSoundscapes} onLoadSoundscape={onLoadSoundscape} />}
       {currentView === 'mixer' && <MixerPage {...mixerProps} />}
 
       {/* Export Modal */}
