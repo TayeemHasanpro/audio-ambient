@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase, supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/firebase'
 import { z } from 'zod'
 
 const soundscapeSchema = z.object({
@@ -11,43 +11,44 @@ const soundscapeSchema = z.object({
 })
 
 export async function GET() {
-  const { data, error } = await supabase
-    .from('soundscapes')
-    .select('*')
-    .order('created_at', { ascending: false })
+  try {
+    const snapshot = await db
+      .collection('soundscapes')
+      .orderBy('created_at', 'desc')
+      .get()
 
-  if (error) {
+    const data = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }))
+
+    return NextResponse.json(data)
+  } catch (error) {
     console.error('Database fetch error:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
-  return NextResponse.json(data)
 }
 
 export async function POST(request) {
   try {
     const body = await request.json()
-    
+
     // Validate input
     const validatedData = soundscapeSchema.parse(body)
     const { title, tag, image, volumes, active_sounds } = validatedData
 
-    if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not initialized')
-    }
+    const docRef = await db.collection('soundscapes').add({
+      title,
+      tag,
+      image,
+      volumes,
+      active_sounds,
+      created_at: new Date().toISOString(),
+    })
 
-    const { data, error } = await supabaseAdmin
-      .from('soundscapes')
-      .insert([
-        { title, tag, image, volumes, active_sounds }
-      ])
-      .select()
+    const newDoc = await docRef.get()
 
-    if (error) {
-      console.error('Database insert error:', error)
-      throw new Error('Database insertion failed')
-    }
-
-    return NextResponse.json(data[0])
+    return NextResponse.json({ id: docRef.id, ...newDoc.data() })
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid input data', details: err.errors }, { status: 400 })

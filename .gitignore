@@ -44,3 +44,8 @@ next-env.d.ts
 # maintenance
 db_setup.js
 /scripts
+
+# sensitive keys
+*.json
+!package.json
+!package-lock.json

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import Copilot from '@/components/Copilot';
 
 // --- WAV Encoder Helper ---
 function audioBufferToWav(buffer) {
@@ -25,7 +24,7 @@ function audioBufferToWav(buffer) {
   setUint16(numOfChan * 2);                      // block-align
   setUint16(16);                                 // 16-bit
   setUint32(0x61746164);                         // "data" - chunk
-  setUint32(length - pos - 4);                   // chunk length
+  setUint32(length - 44);                        // chunk length (total length - header)
 
   for (i = 0; i < buffer.numberOfChannels; i++) {
       channels.push(buffer.getChannelData(i));
@@ -34,7 +33,7 @@ function audioBufferToWav(buffer) {
   while (pos < buffer.length) {
       for (i = 0; i < numOfChan; i++) {             
           sample = Math.max(-1, Math.min(1, channels[i][pos])); 
-          sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0; 
+          sample = Math.round(sample < 0 ? sample * 32768 : sample * 32767);
           view.setInt16(offset, sample, true);          
           offset += 2;
       }
@@ -76,7 +75,7 @@ const ALL_SOUNDS_CONFIG = {
   Ambient: [
     { id: 'brown', name: 'Brown Noise', category: 'Ambient', icon: 'noise_aware', file: 'brown.mp3' },
     { id: 'white', name: 'White Noise', category: 'Ambient', icon: 'radio', file: 'white.mp3' },
-    { id: 'binaural', name: 'Binaural', category: 'Ambient', icon: 'headphones', file: 'binaural.mp3' },
+    { id: 'binaural', name: 'Binaural', category: 'Ambient', icon: 'headphones', file: 'brown.mp3' },
     { id: 'cafe', name: 'Cafe', category: 'Ambient', icon: 'local_cafe', file: 'cafe.mp3' },
   ],
   Mechanical: [
@@ -101,21 +100,53 @@ const ALL_SOUNDS_CONFIG = {
 const ALL_SOUNDS_FLAT = Object.values(ALL_SOUNDS_CONFIG).flat();
 const SOUND_MAP = ALL_SOUNDS_FLAT.reduce((acc, sound) => { acc[sound.id] = sound; return acc; }, {});
 
+// --- Quick-Start Presets ---
+const PRESETS = [
+  { name: 'Deep Focus', icon: 'psychology', tag: 'Work', desc: 'Brown noise + rain for flow state', color: 'from-blue-500/20 to-cyan-500/20', sounds: { brown: 60, rain: 40, cafe: 15 } },
+  { name: 'Rainy Morning', icon: 'coffee', tag: 'Relax', desc: 'Gentle rain with a café backdrop', color: 'from-amber-500/20 to-orange-500/20', sounds: { rain: 55, cafe: 35, forest: 20 } },
+  { name: 'Night Forest', icon: 'dark_mode', tag: 'Sleep', desc: 'Crickets, wind & crackling campfire', color: 'from-emerald-500/20 to-teal-500/20', sounds: { crickets: 45, wind: 30, fireplace: 50 } },
+  { name: 'Ocean Drift', icon: 'sailing', tag: 'Relax', desc: 'Waves and wind for deep relaxation', color: 'from-indigo-500/20 to-purple-500/20', sounds: { ocean: 60, wind: 25, white: 10 } },
+  { name: 'City Commute', icon: 'train', tag: 'Vibe', desc: 'Train rhythms and urban white noise', color: 'from-slate-500/20 to-zinc-500/20', sounds: { diesel_train_passing: 40, city: 30, white: 20 } },
+  { name: 'Summer Meadow', icon: 'wb_sunny', tag: 'Relax', desc: 'Warm birds, gentle breeze & cicadas', color: 'from-yellow-500/20 to-lime-500/20', sounds: { summer_birds_singing: 50, wind: 20, summer_cicadas: 35 } },
+  { name: 'Study Lounge', icon: 'menu_book', tag: 'Work', desc: 'Café chatter with brown noise blanket', color: 'from-rose-500/20 to-pink-500/20', sounds: { cafe: 40, brown: 50, rain: 15 } },
+  { name: 'Storm Watch', icon: 'thunderstorm', tag: 'Sleep', desc: 'Heavy rain, howling wind & thunder', color: 'from-gray-500/20 to-blue-500/20', sounds: { rising_summer_rain: 60, wind_02: 45, ocean: 20 } },
+  { name: 'Wilderness Camp', icon: 'camping', tag: 'Vibe', desc: 'Crackling campfire under open skies', color: 'from-orange-500/20 to-red-500/20', sounds: { fireplace: 55, crickets: 35, wind: 15, nature: 25 } },
+  { name: 'White Cocoon', icon: 'noise_aware', tag: 'Work', desc: 'Pure white noise for total isolation', color: 'from-neutral-500/20 to-stone-500/20', sounds: { white: 70, brown: 20 } },
+  { name: 'Dawn Chorus', icon: 'wb_twilight', tag: 'Relax', desc: 'Birdsong at sunrise in a quiet field', color: 'from-sky-500/20 to-cyan-500/20', sounds: { dawn_skyline: 55, summer_morning: 40, wind: 10 } },
+  { name: 'Control Tower', icon: 'flight', tag: 'Vibe', desc: 'Air traffic radio & airport ambience', color: 'from-teal-500/20 to-emerald-500/20', sounds: { control_tower: 50, heathrow_air_traffic: 40, white: 10 } },
+  { name: 'Reading Nook', icon: 'auto_stories', tag: 'Work', desc: 'Soft birds and protective brown noise', color: 'from-amber-700/20 to-yellow-600/20', sounds: { forest: 25, wind_01: 20, brown: 45 } },
+  { name: 'Cozy Cabin', icon: 'house', tag: 'Relax', desc: 'Roaring fire and gusty mountain wind', color: 'from-red-600/20 to-orange-600/20', sounds: { fireplace: 65, wind: 50, rain: 20 } },
+  { name: 'Urban Rain', icon: 'location_city', tag: 'Relax', desc: 'City hum under a curtain of rainfall', color: 'from-blue-700/20 to-indigo-700/20', sounds: { city: 35, rain: 60, white: 15 } },
+  { name: 'Autumn Breeze', icon: 'eco', tag: 'Sleep', desc: 'Cool wind through trees and crickets', color: 'from-orange-400/20 to-yellow-700/20', sounds: { wind_02: 40, crickets: 35, nature: 30 } },
+  { name: 'Mountain Top', icon: 'landscape', tag: 'Relax', desc: 'Pristine high-altitude wind and dawn', color: 'from-cyan-700/20 to-blue-900/20', sounds: { wind: 60, wind_03: 35, dawn_skyline: 45 } },
+  { name: 'Crowded Cafe', icon: 'local_cafe', tag: 'Vibe', desc: 'The bustling energy of a full bistro', color: 'from-brown-500/20 to-amber-900/20', sounds: { cafe: 65, city: 25, arena_crowd: 10 } },
+  { name: 'Binaural Flow', icon: 'headphones', tag: 'Work', desc: 'Deep focus with binaural rain layers', color: 'from-purple-700/20 to-indigo-900/20', sounds: { binaural: 50, brown: 40, rain: 25 } },
+  { name: 'Summer Eve', icon: 'nights_stay', tag: 'Sleep', desc: 'Warm night air and field insects', color: 'from-indigo-900/20 to-black/20', sounds: { summer_night: 55, crickets_insects: 40, wind_01: 15 } },
+];
+
 // --- HomePage View ---
-const HomePage = ({ navigateToMixer, navigateToLibrary }) => (
-  <main className="relative min-h-screen">
-    {/* NavBar */}
-    <nav className="fixed top-0 w-full z-50 bg-slate-900/40 dark:bg-slate-950/40 backdrop-blur-xl flex justify-between items-center px-10 py-6">
-      <div className="text-2xl font-serif italic text-slate-100">AudioAmbient</div>
-      <div className="hidden md:flex gap-12">
-        <a className="text-primary font-medium border-b border-primary/30 pb-1 font-serif font-light tracking-tight transition-all duration-300 cursor-pointer">Home</a>
-        <a onClick={navigateToMixer} className="text-slate-400 hover:text-slate-200 transition-colors font-serif font-light tracking-tight hover:text-primary transition-all duration-300 cursor-pointer">Audio Mixer</a>
-      </div>
-      <div className="flex items-center gap-6">
-        <button className="text-primary font-serif font-light tracking-tight hover:text-cyan-300 transition-all duration-300">Go Premium</button>
-        <span className="material-symbols-outlined text-slate-200 cursor-pointer text-2xl active:scale-95 duration-200 ease-out">account_circle</span>
-      </div>
-    </nav>
+const HomePage = ({ navigateToMixer, navigateToLibrary, onLoadPreset }) => {
+  const [filter, setFilter] = useState('All');
+  
+  const filteredPresets = useMemo(() => {
+    if (filter === 'All') return PRESETS;
+    return PRESETS.filter(p => p.tag === filter);
+  }, [filter]);
+
+  return (
+    <main className="relative min-h-screen">
+      {/* NavBar */}
+      <nav className="fixed top-0 w-full z-50 bg-slate-900/40 dark:bg-slate-950/40 backdrop-blur-xl flex justify-between items-center px-6 md:px-10 py-5 md:py-6">
+        <div className="text-xl md:text-2xl font-serif italic text-slate-100">AudioAmbient</div>
+        <div className="hidden md:flex gap-12">
+          <a className="text-primary font-medium border-b border-primary/30 pb-1 font-serif font-light tracking-tight transition-all duration-300 cursor-pointer">Home</a>
+          <a onClick={navigateToMixer} className="text-slate-400 hover:text-slate-200 font-serif font-light tracking-tight hover:text-primary transition-all duration-300 cursor-pointer">Audio Mixer</a>
+        </div>
+        <div className="flex items-center gap-4">
+          <button onClick={navigateToMixer} className="md:hidden px-4 py-2 bg-primary/10 text-primary text-xs font-medium rounded-full border border-primary/20">Mixer</button>
+          <span className="material-symbols-outlined text-slate-200 cursor-pointer text-2xl active:scale-95 duration-200 ease-out">account_circle</span>
+        </div>
+      </nav>
 
     {/* Hero Section */}
     <section className="relative h-screen flex items-center justify-center overflow-hidden">
@@ -125,17 +156,17 @@ const HomePage = ({ navigateToMixer, navigateToLibrary }) => (
         <div className="absolute inset-0 hero-glow"></div>
       </div>
       <div className="relative z-10 text-center px-6 max-w-5xl pt-24">
-        <h1 className="font-headline text-6xl md:text-8xl font-light tracking-tight mb-8 text-on-surface">
+        <h1 className="font-headline text-5xl md:text-8xl font-light tracking-tight mb-6 md:mb-8 text-on-surface">
           Master Your <span className="italic text-primary">Environment</span>
         </h1>
-        <p className="text-lg md:text-xl text-on-surface-variant max-w-2xl mx-auto mb-12 font-light leading-relaxed">
+        <p className="text-base md:text-xl text-on-surface-variant max-w-2xl mx-auto mb-10 md:mb-12 font-light leading-relaxed">
           Sculpt your personal acoustic sanctuary with high-fidelity atmospheric layers designed for focus, rest, and transcendence.
         </p>
-        <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-          <button onClick={navigateToMixer} className="px-10 py-4 bg-primary text-on-primary font-medium rounded-full shadow-[0_0_20px_rgba(47,217,244,0.3)] hover:shadow-[0_0_30px_rgba(47,217,244,0.5)] transition-all active:scale-95">
-            Start Mixing Free
+        <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">
+          <button onClick={navigateToMixer} className="w-full md:w-auto px-10 py-4 bg-primary text-on-primary font-medium rounded-full shadow-[0_0_20px_rgba(47,217,244,0.3)] hover:shadow-[0_0_30px_rgba(47,217,244,0.5)] transition-all active:scale-95">
+            Start Mixing Now
           </button>
-          <button onClick={navigateToLibrary} className="px-10 py-4 glass-panel edge-light border border-outline-variant/15 text-on-surface rounded-full hover:bg-surface-variant/60 transition-all">
+          <button onClick={navigateToLibrary} className="w-full md:w-auto px-10 py-4 glass-panel edge-light border border-outline-variant/15 text-on-surface rounded-full hover:bg-surface-variant/60 transition-all">
             Explore Library
           </button>
         </div>
@@ -143,98 +174,112 @@ const HomePage = ({ navigateToMixer, navigateToLibrary }) => (
     </section>
 
     {/* Features Bento Grid */}
-    <section className="py-24 px-10 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            <div className="md:col-span-8 glass-panel edge-light rounded-3xl p-10 flex flex-col justify-end min-h-[400px] relative overflow-hidden">
+    <section className="py-16 md:py-24 px-6 md:px-10 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
+            <div className="md:col-span-8 glass-panel edge-light rounded-3xl p-8 md:p-10 flex flex-col justify-end min-h-[300px] md:min-h-[400px] relative overflow-hidden">
                 <div className="absolute inset-0 z-0 opacity-20">
                     <img className="w-full h-full object-cover" alt="waves" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9DoIOKRSzDZfEKTryYW8Qf8O1in4vVS2l8_jFRGqauAKJON_pYHRc_yX8_VaZb49tR1_NOZX2YZ35v5-eoJzZkU_7UkYU_YDHTWN7iQWnmPe3QMDdyRk3UFqj3-zPqn0pjqM3ck10vBebYhHDbkSGXo5XTS-AE1ilP0fCNqXfP9ra5wQ2iQq7oPPvKyC1fyQIx_wGohiBDsNEpyuL3qIfEbjDFTaltUOnOhGXdZhPN6QAGQhhLnUuUxrzYAfKoV_9kQNh9b0q0og"/>
                 </div>
                 <div className="relative z-10">
-                    <span className="material-symbols-outlined text-primary text-4xl mb-6">waves</span>
-                    <h3 className="font-headline text-4xl mb-4">Neural-Adaptive Rhythms</h3>
-                    <p className="text-on-surface-variant max-w-lg font-light leading-relaxed">
+                    <span className="material-symbols-outlined text-primary text-4xl mb-4 md:mb-6">waves</span>
+                    <h3 className="font-headline text-3xl md:text-4xl mb-3 md:mb-4">Neural-Adaptive Rhythms</h3>
+                    <p className="text-on-surface-variant max-w-lg font-light leading-relaxed text-sm md:text-base">
                         Our proprietary engine adjusts sound frequencies in real-time based on your session duration to maximize cognitive flow.
                     </p>
                 </div>
             </div>
-            <div className="md:col-span-4 bg-surface-container-low rounded-3xl p-10 flex flex-col gap-6 group hover:bg-surface-container transition-colors duration-500">
+            <div className="md:col-span-4 bg-surface-container-low rounded-3xl p-8 md:p-10 flex flex-col gap-4 md:gap-6 group hover:bg-surface-container transition-colors duration-500">
                 <span className="material-symbols-outlined text-secondary text-4xl">forest</span>
                 <div>
                     <h3 className="font-headline text-2xl mb-2">Organic Textures</h3>
                     <p className="text-sm text-on-surface-variant font-light leading-relaxed">Field recordings from the world's most remote landscapes, captured in 96kHz/24-bit resolution.</p>
                 </div>
             </div>
-            <div className="md:col-span-4 bg-surface-container-low rounded-3xl p-10 flex flex-col gap-6 group hover:bg-surface-container transition-colors duration-500">
+            <div className="md:col-span-4 bg-surface-container-low rounded-3xl p-8 md:p-10 flex flex-col gap-4 md:gap-6 group hover:bg-surface-container transition-colors duration-500">
                 <span className="material-symbols-outlined text-primary text-4xl">settings_slow_motion</span>
                 <div>
                     <h3 className="font-headline text-2xl mb-2">Precision Control</h3>
                     <p className="text-sm text-on-surface-variant font-light leading-relaxed">Independently modulate ten discrete layers of white noise, mechanical hums, and natural mists.</p>
                 </div>
             </div>
-            <div className="md:col-span-8 glass-panel edge-light rounded-3xl overflow-hidden relative min-h-[300px]">
+            <div className="md:col-span-8 glass-panel edge-light rounded-3xl overflow-hidden relative min-h-[250px] md:min-h-[300px]">
                 <img className="w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-700" alt="desk" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDctrP42abB0V7uM7FxRNSlteF0DpvZdwmwkgvoSZgaCD2TJ29LrHyMMiJx6Hqul9abJzMxx26KZJHLpos2PE5kcNxMn9LR3POrUU7loR3PXCukqB116L9svNoiKnuz-6Hk3lW36MkIrP91FMr5ceedhQyxRglwOVdf5qsuqDEuhLhkBnSHMLJFtVqeeb1i_ZNe80m_ZdaY76V8swGSil9p2d2ubWBgGRqFh3UOVCluR3ikVMOUYygZY1BtdutGz-gWF2sGMWVg6jA"/>
-                <div className="absolute inset-0 bg-gradient-to-r from-background/80 to-transparent p-10 flex flex-col justify-center">
-                    <h3 className="font-headline text-3xl mb-2">Anywhere, Anytime</h3>
-                    <p className="text-on-surface-variant max-w-xs font-light">Available across all platforms with seamless cloud sync.</p>
+                <div className="absolute inset-0 bg-gradient-to-r from-background/80 to-transparent p-8 md:p-10 flex flex-col justify-center">
+                    <h3 className="font-headline text-2xl md:text-3xl mb-2">Anywhere, Anytime</h3>
+                    <p className="text-on-surface-variant max-w-xs font-light text-sm md:text-base">Available across all platforms with seamless cloud sync.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    {/* Pricing Tiers */}
-    <section className="py-24 px-10 max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-            <h2 className="font-headline text-5xl mb-4">Choose Your Silence</h2>
-            <p className="text-on-surface-variant font-light">Transparent pricing for deep work and deeper rest.</p>
+    {/* Presets Showcase */}
+    <section className="py-12 md:py-20 px-6 md:px-10 max-w-7xl mx-auto">
+      <div className="text-center mb-10 md:mb-14">
+        <span className="material-symbols-outlined text-primary text-4xl mb-4">auto_awesome</span>
+        <h2 className="font-headline text-3xl md:text-5xl font-light text-on-surface mb-3">One-Tap Soundscapes</h2>
+        <p className="text-on-surface-variant font-light max-w-lg mx-auto text-sm md:text-base">Curated presets to instantly set the mood. Tap any card to start mixing.</p>
+      </div>
+
+      {/* Tag filter row */}
+      <div className="flex flex-wrap justify-center gap-2 mb-8">
+        {['All', 'Work', 'Relax', 'Sleep', 'Vibe'].map(tag => (
+          <button 
+            key={tag} 
+            onClick={() => setFilter(tag)}
+            className={`px-4 py-1.5 rounded-full text-[11px] uppercase tracking-wider font-medium transition-all duration-300 ${filter === tag ? 'bg-primary/20 text-primary border-primary/30' : 'bg-white/5 text-on-surface-variant/60 border-white/5 hover:bg-white/10'}`}
+          >
+            {tag}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {filteredPresets.map(preset => (
+          <button
+            key={preset.name}
+            onClick={() => onLoadPreset(preset)}
+            className="preset-card text-left group relative overflow-hidden h-full flex flex-col"
+          >
+            <div className={`absolute inset-0 bg-gradient-to-br ${preset.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+            <div className="relative z-10 flex flex-col h-full">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-center size-10 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform duration-500">
+                  <span className="material-symbols-outlined text-2xl">{preset.icon}</span>
+                </div>
+                <span className="text-[9px] uppercase tracking-widest text-on-surface-variant/40 font-label bg-white/5 px-2 py-0.5 rounded-full">{preset.tag}</span>
+              </div>
+              <p className="text-on-surface text-sm font-medium mb-1 group-hover:text-primary transition-colors">{preset.name}</p>
+              <p className="text-on-surface-variant/50 text-[11px] leading-relaxed line-clamp-2">{preset.desc}</p>
+              <div className="mt-auto pt-4 flex items-center gap-1 text-primary/50 text-[10px] font-label tracking-wider uppercase group-hover:text-primary transition-colors">
+                <span className="material-symbols-outlined text-xs">play_circle</span>
+                Tap to play
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
+
+    {/* CTA Section */}
+    <section className="py-12 md:py-20 px-6">
+      <div className="max-w-3xl mx-auto text-center">
+        <div className="glass-panel edge-light rounded-[2rem] p-10 md:p-16 relative overflow-hidden">
+          <div className="absolute inset-0 hero-glow opacity-60"></div>
+          <div className="relative z-10">
+            <span className="material-symbols-outlined text-primary text-5xl mb-6">headphones</span>
+            <h2 className="font-headline text-3xl md:text-5xl font-light mb-4 text-on-surface">Ready to find your flow?</h2>
+            <p className="text-on-surface-variant font-light mb-8 md:mb-10 max-w-md mx-auto text-sm md:text-base">Layer ambient sounds, customize your perfect atmosphere, and export high-fidelity audio — all free.</p>
+            <button onClick={navigateToMixer} className="w-full md:w-auto px-10 py-4 bg-primary text-on-primary font-medium rounded-full shadow-[0_0_20px_rgba(47,217,244,0.3)] hover:shadow-[0_0_30px_rgba(47,217,244,0.5)] transition-all active:scale-95">
+              Open the Mixer
+            </button>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Starter */}
-            <div className="bg-surface-container-low p-10 rounded-[2rem] flex flex-col items-start hover:translate-y-[-8px] transition-all duration-500">
-                <span className="px-3 py-1 bg-surface-container-highest text-[10px] uppercase tracking-widest text-on-surface-variant rounded-full mb-8">Basic</span>
-                <h4 className="font-headline text-3xl mb-2">Starter</h4>
-                <div className="flex items-baseline gap-1 mb-8">
-                    <span className="text-4xl font-light text-on-surface">$0</span><span className="text-on-surface-variant text-sm">/ forever</span>
-                </div>
-                <ul className="space-y-4 mb-12 flex-grow">
-                    <li className="flex items-center gap-3 text-sm text-on-surface-variant font-light"><span className="material-symbols-outlined text-primary text-lg">check</span> 12 Core Ambiences</li>
-                    <li className="flex items-center gap-3 text-sm text-on-surface-variant font-light"><span className="material-symbols-outlined text-primary text-lg">check</span> Standard Audio Quality</li>
-                </ul>
-                <button className="w-full py-4 border border-outline-variant/30 text-on-surface rounded-xl hover:bg-surface-container-highest transition-colors">Start Free</button>
-            </div>
-            {/* Pro */}
-            <div className="glass-panel edge-light p-10 rounded-[2rem] flex flex-col items-start border border-primary/20 relative shadow-[0_20px_50px_rgba(47,217,244,0.05)] translate-y-[-16px]">
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary px-4 py-1 rounded-full text-[10px] uppercase tracking-widest text-on-primary font-bold">Most Popular</div>
-                <span className="px-3 py-1 bg-primary/10 text-[10px] uppercase tracking-widest text-primary rounded-full mb-8">Subscription</span>
-                <h4 className="font-headline text-3xl mb-2">Pro</h4>
-                <div className="flex items-baseline gap-1 mb-8">
-                    <span className="text-4xl font-light text-on-surface">$9</span><span className="text-on-surface-variant text-sm">/ month</span>
-                </div>
-                <ul className="space-y-4 mb-12 flex-grow">
-                    <li className="flex items-center gap-3 text-sm text-on-surface font-light"><span className="material-symbols-outlined text-primary text-lg">check</span> 200+ Premium Layers</li>
-                    <li className="flex items-center gap-3 text-sm text-on-surface font-light"><span className="material-symbols-outlined text-primary text-lg">check</span> Lossless Audio Support</li>
-                    <li className="flex items-center gap-3 text-sm text-on-surface font-light"><span className="material-symbols-outlined text-primary text-lg">check</span> Offline Access</li>
-                </ul>
-                <button className="w-full py-4 bg-primary text-on-primary rounded-xl font-medium shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">Get Pro</button>
-            </div>
-            {/* Lifetime */}
-            <div className="bg-surface-container-low p-10 rounded-[2rem] flex flex-col items-start hover:translate-y-[-8px] transition-all duration-500">
-                <span className="px-3 py-1 bg-surface-container-highest text-[10px] uppercase tracking-widest text-on-surface-variant rounded-full mb-8">One-time</span>
-                <h4 className="font-headline text-3xl mb-2">Lifetime</h4>
-                <div className="flex items-baseline gap-1 mb-8">
-                    <span className="text-4xl font-light text-on-surface">$149</span><span className="text-on-surface-variant text-sm">/ once</span>
-                </div>
-                <ul className="space-y-4 mb-12 flex-grow">
-                    <li className="flex items-center gap-3 text-sm text-on-surface-variant font-light"><span className="material-symbols-outlined text-primary text-lg">check</span> All Pro Features</li>
-                    <li className="flex items-center gap-3 text-sm text-on-surface-variant font-light"><span className="material-symbols-outlined text-primary text-lg">check</span> Future Content Updates</li>
-                </ul>
-                <button className="w-full py-4 border border-outline-variant/30 text-on-surface rounded-xl hover:bg-surface-container-highest transition-colors">Buy Lifetime</button>
-            </div>
-        </div>
+      </div>
     </section>
 
     {/* Footer */}
-    <footer className="py-12 px-10 border-t border-outline-variant/10 bg-surface-container-lowest">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+    <footer className="py-10 md:py-12 px-6 md:px-10 border-t border-outline-variant/10 bg-surface-container-lowest">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 md:gap-8">
             <div className="text-xl font-serif italic text-slate-100">AudioAmbient</div>
             <div className="flex gap-8 text-xs uppercase tracking-widest text-on-surface-variant font-light">
                 <a className="hover:text-primary transition-colors cursor-pointer">Privacy</a>
@@ -245,7 +290,8 @@ const HomePage = ({ navigateToMixer, navigateToLibrary }) => (
         </div>
     </footer>
   </main>
-);
+  );
+};
 
 // --- Component: SideNavBar (Desktop) + BottomNav (Mobile) ---
 const SideNavBar = ({ currentView, setCurrentView }) => (
@@ -254,7 +300,7 @@ const SideNavBar = ({ currentView, setCurrentView }) => (
     <nav className="hidden md:flex fixed left-0 top-0 h-full w-64 z-50 flex-col p-8 bg-slate-950/60 backdrop-blur-2xl rounded-r-3xl">
       <div className="mb-12">
         <h2 className="text-xl font-serif text-primary">AudioAmbient</h2>
-        <p className="font-sans text-[10px] uppercase tracking-widest text-slate-500 mt-1">Deep Focus Active</p>
+        <p className="font-sans text-[10px] uppercase tracking-widest text-slate-500 mt-1">Personal Soundscape</p>
       </div>
       <ul className="space-y-4 flex-grow">
         <li>
@@ -280,7 +326,7 @@ const SideNavBar = ({ currentView, setCurrentView }) => (
         <img alt="User profile" className="w-10 h-10 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmDOoB_MYUFLm-wI-1tDn356DQlWHUW4IizuQP-cqFxFllDloUDszyo0B1gbIcoEAJG9gAwtazabxGic8IYFerU_AkLij8oK5RCv178TzBUbN4NnZx3UAeieBhbM69Ip2UBmNhPzyjAYqitY1iGCruWLFfnMT2ImSHynwk9xQ-qL9OGy9Ux2_EryLG6cFBIFBGYVGRvqDegz_Iq7rGXXQTB33k9i4D9Ue-HCJUHslui0oymJLxxUS6jHIuwZPU5gMyMtuw-5XriMI"/>
         <div className="overflow-hidden">
           <p className="text-xs font-semibold truncate text-left text-on-surface">Alex Rivera</p>
-          <p className="text-[10px] text-slate-500 text-left">Premium Member</p>
+          <p className="text-[10px] text-slate-500 text-left">Active Member</p>
         </div>
       </div>
     </nav>
@@ -341,126 +387,457 @@ const LibraryPage = ({ setCurrentView, savedSoundscapes, onLoadSoundscape }) => 
   </div>
 );
 
-// --- Component: Custom Vertical Slider ---
-const VerticalSliderLevel = ({ level, onChange, soundId }) => {
-  const containerRef = useRef(null);
-  
-  const handleInput = (e) => {
-    // Basic calculation for vertical slider dragging logic if standard range is difficult to style cross-browser.
-    // Instead we map standard range properties but let CSS styling take care of the vertical alignment.
-    onChange(soundId, parseInt(e.target.value));
-  };
+// --- Component: Circular Waveform Visualizer (Web Audio API) ---
+const WaveformVisualizer = ({ analyserRef, isPlaying }) => {
+  const canvasRef = useRef(null);
+  const animFrameRef = useRef(null);
 
-  return (
-    <div className="flex flex-col items-center justify-between h-32 w-4 relative">
-        <div className="absolute inset-y-0 w-[2px] bg-outline-variant/50 rounded-full left-1/2 -translate-x-1/2"></div>
-        <div className="absolute bottom-0 w-[2px] bg-primary rounded-full left-1/2 -translate-x-1/2 glow-track" style={{ height: `${level}%`, boxShadow: level > 0 ? "0 0 4px 0 rgba(47, 217, 244, 0.5)" : "none" }}></div>
-        <input 
-            type="range" 
-            min="0" 
-            max="100" 
-            value={level} 
-            onChange={handleInput}
-            className="absolute inset-y-0 w-8 opacity-0 cursor-pointer -translate-x-1/2 left-1/2 z-20"
-            style={{ writingMode: 'vertical-lr', direction: 'rtl' }}
-        />
-        <div className="absolute w-1.5 h-4 bg-primary rounded-full left-1/2 -translate-x-1/2 cursor-ns-resize shadow-[0_0_8px_rgba(47,217,244,0.8)] pointer-events-none z-10" style={{ bottom: `calc(${level}% - 8px)` }}></div>
-    </div>
-  )
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = 200 * dpr;
+    canvas.height = 200 * dpr;
+    ctx.scale(dpr, dpr);
+
+    const draw = () => {
+      const W = 200, H = 200, cx = W / 2, cy = H / 2, R = 72;
+      ctx.clearRect(0, 0, W, H);
+
+      const analyser = analyserRef.current;
+      let dataArray;
+      if (analyser) {
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(dataArray);
+      } else {
+        dataArray = new Uint8Array(128).fill(0);
+      }
+
+      // Outer glow ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, R + 20, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(47, 217, 244, 0.06)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Draw circular frequency bars
+      const bars = 64;
+      const step = Math.floor(dataArray.length / bars);
+      for (let i = 0; i < bars; i++) {
+        const val = dataArray[i * step] / 255;
+        const angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
+        const barLen = 8 + val * 40;
+        const innerR = R - 4;
+        const x1 = cx + Math.cos(angle) * innerR;
+        const y1 = cy + Math.sin(angle) * innerR;
+        const x2 = cx + Math.cos(angle) * (innerR + barLen);
+        const y2 = cy + Math.sin(angle) * (innerR + barLen);
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = `rgba(47, 217, 244, ${0.3 + val * 0.7})`;
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+
+      // Inner circle
+      ctx.beginPath();
+      ctx.arc(cx, cy, R - 8, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(8, 12, 24, 0.6)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(47, 217, 244, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Center icon
+      ctx.fillStyle = isPlaying ? 'rgba(47, 217, 244, 0.9)' : 'rgba(255,255,255,0.4)';
+      ctx.font = '32px "Material Symbols Outlined"';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(isPlaying ? '♫' : '♪', cx, cy);
+
+      animFrameRef.current = requestAnimationFrame(draw);
+    };
+
+    draw();
+    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
+  }, [analyserRef, isPlaying]);
+
+  return <canvas ref={canvasRef} className="w-[200px] h-[200px]" style={{ width: 200, height: 200 }} />;
 };
 
-// --- Mixer View ---
-const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlaying, setActiveSoundIds, handleVolumeChange, togglePlay, addToMixer, removeFromMixer, onExportClick, onSaveMix }) => {
+// --- Component: Horizontal Volume Slider ---
+const HorizontalVolumeSlider = ({ value, onChange, soundId }) => (
+  <div className="relative flex items-center flex-1 min-w-0 group/slider">
+    <div className="absolute h-[4px] bg-white/[0.06] rounded-full w-full pointer-events-none"></div>
+    <div className="absolute h-[4px] bg-primary rounded-full pointer-events-none transition-all" style={{ width: `${value}%`, boxShadow: value > 0 ? '0 0 8px rgba(47,217,244,0.4)' : 'none' }}></div>
+    <input
+      type="range" min="0" max="100" value={value}
+      onChange={e => onChange(soundId, parseInt(e.target.value))}
+      className="vol-slider w-full relative z-10"
+    />
+  </div>
+);
+
+// --- Mixer View (Redesigned Two-Column Layout) ---
+const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlaying, setActiveSoundIds, handleVolumeChange, togglePlay, addToMixer, removeFromMixer, onExportClick, onSaveMix, analyserRef }) => {
   const activeMixerSounds = useMemo(() => activeSoundIds.map(id => SOUND_MAP[id]).filter(Boolean), [activeSoundIds]);
-  const [addSoundOpen, setAddSoundOpen] = useState(false);
+  const [browserOpen, setBrowserOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('Nature');
+  const [mutedSounds, setMutedSounds] = useState({});
+  const prevVolumes = useRef({});
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const toggleMute = (id) => {
+    if (mutedSounds[id]) {
+      handleVolumeChange(id, prevVolumes.current[id] || 50);
+      setMutedSounds(p => ({ ...p, [id]: false }));
+    } else {
+      prevVolumes.current[id] = volumes[id];
+      handleVolumeChange(id, 0);
+      setMutedSounds(p => ({ ...p, [id]: true }));
+    }
+  };
+
+  const loadPreset = (preset) => {
+    Object.entries(preset.sounds).forEach(([id, vol]) => {
+      addToMixer(id);
+      handleVolumeChange(id, vol);
+    });
+  };
+
+  const filteredSounds = useMemo(() => {
+    const sounds = ALL_SOUNDS_CONFIG[activeCategory] || [];
+    if (!searchQuery) return sounds;
+    return sounds.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [activeCategory, searchQuery]);
+
+  const heroImage = activeMixerSounds.length > 0 ? (activeMixerSounds[0].image || '') : '';
 
   return (
-    <div className="md:ml-64 pt-20 md:pt-32 px-3 md:px-12 pb-28 md:pb-24 relative min-h-screen z-10 flex flex-col">
-      <header className="flex flex-wrap items-center justify-between gap-3 mb-6 md:mb-10 glass-panel rounded-xl px-4 md:px-8 py-4 md:py-6 ambient-shadow">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-on-surface text-2xl md:text-4xl font-headline font-medium leading-tight tracking-[-0.02em]">Mixer Deck</h2>
-          <p className="text-secondary text-xs md:text-sm font-label tracking-[0.05em] uppercase">Now Playing</p>
-        </div>
-        <div className="flex items-center gap-2 md:gap-6 flex-wrap">
-          <button onClick={onSaveMix} className="flex items-center justify-center rounded-lg h-9 md:h-10 px-3 md:px-6 bg-primary/20 text-primary text-xs md:text-sm font-label tracking-[0.05em] uppercase hover:bg-primary/30 transition-colors gap-2 border border-primary/20">
-            <span className="material-symbols-outlined text-sm">save</span>
-            <span className="hidden sm:inline">Save Mix</span>
-          </button>
-          <button onClick={() => { setActiveSoundIds([]); setVolumes(v => Object.keys(v).reduce((acc, k) => ({...acc, [k]: 0}), {})) }} className="text-primary text-xs md:text-sm font-label tracking-[0.05em] uppercase hover:text-primary-fixed transition-colors">
-            Clear
-          </button>
-          
-          {/* Add Sound — click-to-toggle on mobile, hover on desktop */}
-          <div className="relative">
-            <button onClick={() => setAddSoundOpen(o => !o)} className="flex items-center justify-center rounded-lg h-9 md:h-10 px-3 md:px-6 bg-surface-container-high text-on-surface text-xs md:text-sm font-label tracking-[0.05em] uppercase hover:bg-surface-bright transition-colors gap-2">
-                <span className="material-symbols-outlined text-sm">add</span>
-                <span className="hidden sm:inline">Add Sound</span>
+    <div className="md:ml-64 relative min-h-screen z-10 flex flex-col view-enter">
+
+      {/* ===== DESKTOP: Two Column Layout ===== */}
+      <div className="hidden md:flex flex-1 h-[calc(100vh-72px)]">
+
+        {/* --- LEFT COLUMN: Track List + Controls --- */}
+        <div className="flex-1 flex flex-col min-w-0 px-8 pt-6 pb-24 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-5 shrink-0">
+            <div>
+              <h2 className="font-headline text-2xl font-light text-on-surface tracking-tight">
+                {activeMixerSounds.length > 0 ? 'Your Mix' : 'Start Mixing'}
+              </h2>
+              <p className="text-on-surface-variant/60 text-xs font-label tracking-[0.1em] uppercase mt-0.5">
+                {activeMixerSounds.length} layer{activeMixerSounds.length !== 1 ? 's' : ''} active
+              </p>
+            </div>
+            <button onClick={() => setBrowserOpen(!browserOpen)} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-label tracking-wider uppercase transition-all ${browserOpen ? 'bg-primary/15 text-primary border border-primary/20' : 'bg-white/5 text-on-surface-variant hover:bg-white/10 border border-white/5'}`}>
+              <span className="material-symbols-outlined text-base">{browserOpen ? 'close' : 'add_circle'}</span>
+              {browserOpen ? 'Close' : 'Add Sounds'}
             </button>
-            {addSoundOpen && (
-              <div className="absolute right-0 top-11 w-64 bg-surface-container-high rounded-xl p-4 shadow-2xl z-20 max-h-64 overflow-y-auto">
-                  {ALL_SOUNDS_FLAT.map(sound => (
-                      <div key={sound.id} onClick={() => { if(!activeSoundIds.includes(sound.id)) addToMixer(sound.id); setAddSoundOpen(false); }} className={`flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-surface-bright ${activeSoundIds.includes(sound.id) ? 'opacity-50' : ''}`}>
-                          <div className="flex items-center gap-3">
-                              <span className="material-symbols-outlined text-primary text-sm">{sound.icon}</span>
-                              <span className="text-sm font-medium">{sound.name}</span>
-                          </div>
-                          {activeSoundIds.includes(sound.id) && <span className="material-symbols-outlined text-primary text-xs">check</span>}
-                      </div>
+          </div>
+
+          {/* Sound Browser Panel (inline, toggleable) */}
+          {browserOpen && (
+            <div className="mb-5 shrink-0 glass-panel rounded-2xl p-4 border border-white/5 view-enter">
+              {/* Search */}
+              <div className="relative mb-3">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-sm">search</span>
+                <input
+                  type="text" placeholder="Search sounds..."
+                  value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full bg-white/5 border border-white/5 rounded-lg pl-9 pr-4 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/30 outline-none focus:border-primary/30 transition-colors"
+                />
+              </div>
+              {/* Category Tabs */}
+              <div className="flex gap-2 mb-3 overflow-x-auto">
+                {Object.keys(ALL_SOUNDS_CONFIG).map(cat => (
+                  <button key={cat} onClick={() => setActiveCategory(cat)} className={`category-tab ${activeCategory === cat ? 'active' : ''}`}>{cat}</button>
+                ))}
+              </div>
+              {/* Sound Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-1.5 max-h-48 overflow-y-auto track-list-scroll pr-1">
+                {filteredSounds.map(sound => (
+                  <div
+                    key={sound.id}
+                    onClick={() => { if (!activeSoundIds.includes(sound.id)) addToMixer(sound.id); }}
+                    className={`sound-tile ${activeSoundIds.includes(sound.id) ? 'active' : ''}`}
+                  >
+                    <span className="material-symbols-outlined text-primary/70 text-lg">{sound.icon}</span>
+                    <span className="text-xs text-on-surface truncate">{sound.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Track List */}
+          <div className="flex-1 overflow-y-auto track-list-scroll pr-1 min-h-0">
+            {activeMixerSounds.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {activeMixerSounds.map((sound, idx) => (
+                  <div key={sound.id} className={`track-row rounded-xl px-4 py-3.5 flex items-center gap-4 group stagger-${Math.min(idx + 1, 8)}`}>
+                    <span className="text-on-surface-variant/25 text-xs font-mono w-5 text-right shrink-0">{idx + 1}</span>
+                    <div className="flex items-center justify-center size-10 rounded-xl bg-primary/8 text-primary shrink-0">
+                      <span className="material-symbols-outlined text-lg">{sound.icon}</span>
+                    </div>
+                    <div className="flex flex-col min-w-0 w-32 shrink-0">
+                      <p className="text-on-surface text-sm font-medium truncate">{sound.name}</p>
+                      <p className="text-on-surface-variant/40 text-[10px] font-label tracking-[0.1em] uppercase">{sound.category}</p>
+                    </div>
+                    <HorizontalVolumeSlider value={volumes[sound.id] || 0} onChange={handleVolumeChange} soundId={sound.id} />
+                    <span className="text-on-surface-variant/60 text-xs font-mono w-9 text-right shrink-0 tabular-nums">{volumes[sound.id] || 0}%</span>
+                    <button onClick={() => toggleMute(sound.id)} className="text-on-surface-variant/40 hover:text-primary transition-colors shrink-0">
+                      <span className="material-symbols-outlined text-lg" style={{fontVariationSettings: "'FILL' 1"}}>{mutedSounds[sound.id] || volumes[sound.id] === 0 ? 'volume_off' : 'volume_up'}</span>
+                    </button>
+                    <button onClick={() => removeFromMixer(sound.id)} className="text-on-surface-variant/20 hover:text-red-400 transition-colors shrink-0 opacity-0 group-hover:opacity-100">
+                      <span className="material-symbols-outlined text-base">close</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Empty State with Presets */
+              <div className="flex flex-col items-center justify-center py-12">
+                <span className="material-symbols-outlined text-on-surface-variant/20 text-6xl mb-4">graphic_eq</span>
+                <h3 className="font-headline text-xl text-on-surface/80 mb-2">Build your soundscape</h3>
+                <p className="text-on-surface-variant/40 text-sm mb-8 max-w-sm text-center">Add sounds from the browser or try a preset to get started.</p>
+                <div className="grid grid-cols-2 gap-3 w-full max-w-md">
+                  {PRESETS.map(preset => (
+                    <button key={preset.name} onClick={() => loadPreset(preset)} className="preset-card text-left">
+                      <span className="material-symbols-outlined text-primary text-2xl mb-3">{preset.icon}</span>
+                      <p className="text-on-surface text-sm font-medium">{preset.name}</p>
+                      <p className="text-on-surface-variant/50 text-[11px] mt-1 leading-relaxed">{preset.desc}</p>
+                    </button>
                   ))}
+                </div>
               </div>
             )}
           </div>
-
-          <button onClick={togglePlay} className="flex items-center justify-center rounded-full size-11 md:size-14 bg-gradient-to-tr from-primary to-primary-container text-on-primary ambient-shadow hover:scale-105 transition-transform">
-            <span className="material-symbols-outlined text-2xl md:text-3xl" style={{fontVariationSettings: "'FILL' 1"}}>{isPlaying ? 'pause' : 'play_arrow'}</span>
-          </button>
-          <button onClick={onExportClick} className="hidden sm:flex items-center justify-center rounded-lg h-9 md:h-10 px-3 md:px-6 bg-surface-container-highest text-on-surface border border-outline-variant/15 text-xs md:text-sm font-label tracking-[0.05em] uppercase hover:bg-surface-bright transition-colors">
-            Export
-          </button>
         </div>
-      </header>
-      
-      <div className="flex-1 w-full max-w-[1024px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 auto-rows-min">
-        {activeMixerSounds.map(sound => (
-          <div key={sound.id} className="flex flex-col gap-4 rounded-xl glass-panel p-4 md:p-6 ambient-shadow relative">
-            {/* Remove button always visible on mobile */}
-            <button onClick={() => removeFromMixer(sound.id)} className="absolute top-3 right-3 text-on-surface-variant hover:text-error transition-colors z-20 md:opacity-0 md:group-hover:opacity-100 opacity-100">
-              <span className="material-symbols-outlined text-base">close</span>
-            </button>
-            <div className="flex items-start justify-between z-10">
-              <div className="flex items-center gap-3 md:gap-4">
-                <div className="flex items-center justify-center size-10 md:size-12 rounded-full bg-surface-container-low text-primary">
-                  <span className="material-symbols-outlined text-xl md:text-2xl">{sound.icon}</span>
-                </div>
-                <div className="flex flex-col">
-                  <p className="text-on-surface text-base md:text-lg font-headline font-medium leading-tight">{sound.name}</p>
-                  <p className="text-secondary text-xs font-label tracking-[0.05em] uppercase">{sound.category}</p>
-                </div>
+
+        {/* --- RIGHT COLUMN: Now Playing Panel --- */}
+        <div className="w-[320px] shrink-0 now-playing-panel flex flex-col items-center px-6 pt-8 pb-24 overflow-y-auto">
+          {/* Visualizer */}
+          <div className="visualizer-ring rounded-full mb-4">
+            <WaveformVisualizer analyserRef={analyserRef} isPlaying={isPlaying} />
+          </div>
+
+          {/* Now Playing Info */}
+          <h3 className="font-headline text-xl font-light text-on-surface tracking-tight text-center mb-1">
+            {isPlaying ? 'Now Playing' : 'Paused'}
+          </h3>
+          <p className="text-primary/60 text-[10px] font-label tracking-[0.15em] uppercase mb-6">
+            {activeMixerSounds.length} layer{activeMixerSounds.length !== 1 ? 's' : ''}
+          </p>
+
+          {/* Play button */}
+          <button onClick={togglePlay} className={`flex items-center justify-center rounded-full size-16 bg-gradient-to-br from-primary to-cyan-400 text-on-primary shadow-lg hover:scale-105 active:scale-95 transition-all mb-6 ${isPlaying ? 'play-btn-active' : ''}`}>
+            <span className="material-symbols-outlined text-3xl" style={{fontVariationSettings: "'FILL' 1"}}>{isPlaying ? 'pause' : 'play_arrow'}</span>
+          </button>
+
+          {/* Active Layers Chips */}
+          {activeMixerSounds.length > 0 && (
+            <div className="w-full mb-6">
+              <p className="text-[10px] text-on-surface-variant/40 uppercase tracking-widest mb-2">Active Layers</p>
+              <div className="flex flex-wrap gap-1.5">
+                {activeMixerSounds.map(s => (
+                  <span key={s.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/8 text-primary text-[11px] rounded-full border border-primary/15">
+                    <span className="material-symbols-outlined text-xs">{s.icon}</span>
+                    {s.name}
+                  </span>
+                ))}
               </div>
             </div>
-            <div className="flex items-center gap-4 md:gap-6 mt-2 md:mt-4 h-28 md:h-32 relative z-10">
-              <VerticalSliderLevel level={volumes[sound.id] || 0} onChange={handleVolumeChange} soundId={sound.id} />
-              <div 
-                className="w-full h-full bg-center bg-no-repeat bg-cover rounded-lg border border-outline-variant/15 relative overflow-hidden" 
-                style={{ backgroundImage: `url('${sound.image || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAmqdJL30I4z3hB2Cbh4xo2t-oUIEsI2-ANN0kwkkDQU0-cf3-YJFbAVQX91oiJEApRSMYFr8swNXSp7QawMT5_dbEIPXfq_xNLrwhSRynDpe7lLo6Mh9_esLlmP5wkVZ7dkHjDVbODbTdZ2NsYpOfBV1yxjB3Ga0CYlKxPpQIbQrY4RFgthTaT7xK3BGorcqdZ59yQjv8uKV9CQLTOBDZ7-6ICpBpgdeDBH667jDgT5Rj760MKGgYOB635RIBO-EGuohOtyIN08DQ'}')` }}
-              >
-                  <div className="absolute inset-0 bg-background/40"></div>
-              </div>
+          )}
+
+          {/* Quick Actions */}
+          <div className="w-full flex flex-col gap-2 mt-auto">
+            <button onClick={onSaveMix} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary/10 text-primary text-xs font-label tracking-wider uppercase hover:bg-primary/15 transition-colors border border-primary/10">
+              <span className="material-symbols-outlined text-base">bookmark_add</span>
+              Save Soundscape
+            </button>
+            <button onClick={onExportClick} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 text-on-surface-variant text-xs font-label tracking-wider uppercase hover:bg-white/8 transition-colors border border-white/5">
+              <span className="material-symbols-outlined text-base">download</span>
+              Export Audio
+            </button>
+            <button onClick={() => { setActiveSoundIds([]); setVolumes(v => Object.keys(v).reduce((acc, k) => ({...acc, [k]: 0}), {})); }} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-on-surface-variant/40 text-xs font-label tracking-wider uppercase hover:text-red-400 hover:bg-red-400/5 transition-colors">
+              <span className="material-symbols-outlined text-base">delete_sweep</span>
+              Clear All
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== MOBILE LAYOUT ===== */}
+      <div className="md:hidden flex flex-col min-h-screen pt-4 pb-40">
+        {/* Mobile Header */}
+        <div className="px-4 mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="font-headline text-xl font-light text-on-surface">Your Mix</h2>
+            <p className="text-on-surface-variant/60 text-[10px] font-label tracking-[0.1em] uppercase">{activeMixerSounds.length} layer{activeMixerSounds.length !== 1 ? 's' : ''}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={onSaveMix} className="size-9 flex items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span className="material-symbols-outlined text-lg">bookmark_add</span>
+            </button>
+            <button onClick={onExportClick} className="size-9 flex items-center justify-center rounded-lg bg-white/5 text-on-surface-variant">
+              <span className="material-symbols-outlined text-lg">download</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Visualizer (compact) */}
+        <div className="flex justify-center py-3 mb-2">
+          <div className="scale-75 origin-center">
+            <div className="visualizer-ring rounded-full">
+              <WaveformVisualizer analyserRef={analyserRef} isPlaying={isPlaying} />
             </div>
           </div>
-        ))}
-        {activeMixerSounds.length === 0 && (
-            <div className="col-span-full h-64 flex flex-col items-center justify-center border-2 border-dashed border-outline-variant/20 rounded-2xl text-on-surface-variant">
-                <span className="material-symbols-outlined text-4xl mb-4 opacity-50">tune</span>
-                <p className="font-headline text-xl">Mixer is empty</p>
-                <p className="text-sm text-center px-4">Tap + Add Sound to build your sanctuary.</p>
+        </div>
+
+        {/* Mobile Track List */}
+        <div className="flex-1 px-4 overflow-y-auto track-list-scroll">
+          {activeMixerSounds.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {activeMixerSounds.map((sound, idx) => (
+                <div key={sound.id} className={`track-row rounded-xl px-3 py-3 flex items-center gap-3 stagger-${Math.min(idx + 1, 8)}`}>
+                  <div className="flex items-center justify-center size-9 rounded-lg bg-primary/10 text-primary shrink-0">
+                    <span className="material-symbols-outlined text-base">{sound.icon}</span>
+                  </div>
+                  <div className="flex flex-col min-w-0 w-20 shrink-0">
+                    <p className="text-on-surface text-sm font-medium truncate">{sound.name}</p>
+                    <p className="text-on-surface-variant/40 text-[9px] font-label tracking-[0.1em] uppercase">{sound.category}</p>
+                  </div>
+                  <HorizontalVolumeSlider value={volumes[sound.id] || 0} onChange={handleVolumeChange} soundId={sound.id} />
+                  <span className="text-on-surface-variant/60 text-[11px] font-mono w-8 text-right shrink-0 tabular-nums">{volumes[sound.id] || 0}%</span>
+                  <button onClick={() => toggleMute(sound.id)} className="text-on-surface-variant/40 hover:text-primary transition-colors shrink-0">
+                    <span className="material-symbols-outlined text-base" style={{fontVariationSettings: "'FILL' 1"}}>{mutedSounds[sound.id] || volumes[sound.id] === 0 ? 'volume_off' : 'volume_up'}</span>
+                  </button>
+                  <button onClick={() => removeFromMixer(sound.id)} className="text-on-surface-variant/30 shrink-0">
+                    <span className="material-symbols-outlined text-sm">close</span>
+                  </button>
+                </div>
+              ))}
             </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-10">
+              <span className="material-symbols-outlined text-on-surface-variant/20 text-5xl mb-3">graphic_eq</span>
+              <h3 className="font-headline text-lg text-on-surface/80 mb-2">Build your soundscape</h3>
+              <p className="text-on-surface-variant/40 text-sm mb-6 text-center px-4">Try a preset or add sounds to begin.</p>
+              <div className="grid grid-cols-2 gap-2.5 w-full">
+                {PRESETS.map(preset => (
+                  <button key={preset.name} onClick={() => loadPreset(preset)} className="preset-card text-left">
+                    <span className="material-symbols-outlined text-primary text-xl mb-2">{preset.icon}</span>
+                    <p className="text-on-surface text-xs font-medium">{preset.name}</p>
+                    <p className="text-on-surface-variant/50 text-[10px] mt-0.5">{preset.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Transport Bar — above bottom nav */}
+        <div className="fixed bottom-14 left-0 right-0 z-40 transport-bar px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <button onClick={() => { setActiveSoundIds([]); setVolumes(v => Object.keys(v).reduce((acc, k) => ({...acc, [k]: 0}), {})); }} className="text-on-surface-variant/30 hover:text-on-surface transition-colors">
+              <span className="material-symbols-outlined text-xl">delete_sweep</span>
+            </button>
+            <button onClick={togglePlay} className={`flex items-center justify-center rounded-full size-12 bg-gradient-to-br from-primary to-cyan-400 text-on-primary shadow-lg hover:scale-105 active:scale-95 transition-all ${isPlaying ? 'play-btn-active' : ''}`}>
+              <span className="material-symbols-outlined text-2xl" style={{fontVariationSettings: "'FILL' 1"}}>{isPlaying ? 'pause' : 'play_arrow'}</span>
+            </button>
+            <button onClick={() => setBrowserOpen(true)} className="text-on-surface-variant/50 hover:text-primary transition-colors">
+              <span className="material-symbols-outlined text-xl">add_circle</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Sound Browser — Bottom Sheet */}
+        {browserOpen && (
+          <>
+            <div className="fixed inset-0 bg-black/50 z-50 mobile-overlay" onClick={() => setBrowserOpen(false)} />
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface-container-high rounded-t-3xl max-h-[75vh] flex flex-col mobile-panel">
+              <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+                <h3 className="font-headline text-lg text-on-surface">Add Sounds</h3>
+                <button onClick={() => setBrowserOpen(false)} className="text-on-surface-variant/40 hover:text-on-surface">
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+              {/* Search */}
+              <div className="px-5 mb-3 shrink-0">
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-sm">search</span>
+                  <input
+                    type="text" placeholder="Search sounds..."
+                    value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                    className="w-full bg-white/5 border border-white/5 rounded-lg pl-9 pr-4 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/30 outline-none focus:border-primary/30 transition-colors"
+                  />
+                </div>
+              </div>
+              {/* Tabs */}
+              <div className="flex gap-2 px-5 mb-3 overflow-x-auto shrink-0 pb-1">
+                {Object.keys(ALL_SOUNDS_CONFIG).map(cat => (
+                  <button key={cat} onClick={() => setActiveCategory(cat)} className={`category-tab ${activeCategory === cat ? 'active' : ''}`}>{cat}</button>
+                ))}
+              </div>
+              {/* Sounds */}
+              <div className="flex-1 overflow-y-auto px-5 pb-8 track-list-scroll">
+                <div className="grid grid-cols-2 gap-1.5">
+                  {filteredSounds.map(sound => (
+                    <div
+                      key={sound.id}
+                      onClick={() => { if (!activeSoundIds.includes(sound.id)) { addToMixer(sound.id); } }}
+                      className={`sound-tile ${activeSoundIds.includes(sound.id) ? 'active' : ''}`}
+                    >
+                      <span className="material-symbols-outlined text-primary/70 text-lg">{sound.icon}</span>
+                      <span className="text-xs text-on-surface truncate">{sound.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
         )}
+      </div>
+
+      {/* ===== DESKTOP Transport Bar ===== */}
+      <div className="hidden md:block fixed bottom-0 left-64 right-0 z-40 transport-bar px-8 py-3.5">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-6">
+          <div className="flex items-center gap-2 text-on-surface-variant/40 text-xs">
+            <span className="material-symbols-outlined text-sm">layers</span>
+            {activeMixerSounds.length} layer{activeMixerSounds.length !== 1 ? 's' : ''} · {isPlaying ? 'Playing' : 'Paused'}
+          </div>
+          <div className="flex items-center gap-4">
+            <button onClick={() => { setActiveSoundIds([]); setVolumes(v => Object.keys(v).reduce((acc, k) => ({...acc, [k]: 0}), {})); }} className="text-on-surface-variant/30 hover:text-on-surface transition-colors" title="Clear all">
+              <span className="material-symbols-outlined text-xl">delete_sweep</span>
+            </button>
+            <button onClick={togglePlay} className={`flex items-center justify-center rounded-full size-12 bg-gradient-to-br from-primary to-cyan-400 text-on-primary shadow-lg hover:scale-105 active:scale-95 transition-all ${isPlaying ? 'play-btn-active' : ''}`}>
+              <span className="material-symbols-outlined text-2xl" style={{fontVariationSettings: "'FILL' 1"}}>{isPlaying ? 'pause' : 'play_arrow'}</span>
+            </button>
+            <button onClick={() => setBrowserOpen(o => !o)} className="text-on-surface-variant/40 hover:text-primary transition-colors" title="Add sound">
+              <span className="material-symbols-outlined text-xl">playlist_add</span>
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={onSaveMix} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-primary/70 hover:text-primary hover:bg-primary/10 transition-all text-xs font-label tracking-wider uppercase">
+              <span className="material-symbols-outlined text-sm">bookmark_add</span>
+              Save
+            </button>
+            <button onClick={onExportClick} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-on-surface-variant/50 hover:text-on-surface hover:bg-white/5 transition-all text-xs font-label tracking-wider uppercase">
+              <span className="material-symbols-outlined text-sm">download</span>
+              Export
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
-
 
 // --- App Wrapper ---
 export default function AudioAmbientApp() {
@@ -470,6 +847,10 @@ export default function AudioAmbientApp() {
   const [activeSoundIds, setActiveSoundIds] = useState(['rain', 'ocean', 'forest']);
   const [savedSoundscapes, setSavedSoundscapes] = useState([]);
   const audioRefs = useRef({});
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const gainNodesRef = useRef({});
+  const sourceNodesRef = useRef({});
 
   // Export Modal States
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -538,51 +919,89 @@ export default function AudioAmbientApp() {
       setIsPlaying(true); // Auto play
   };
 
-  const applyMixerLevels = (newVolumes) => {
-      if (!newVolumes) return;
-      const mergedVols = { ...ALL_SOUNDS_FLAT.reduce((acc, sound) => ({ ...acc, [sound.id]: 0 }), {}) };
-      const newActive = [];
-      Object.keys(newVolumes).forEach(k => {
-          if (newVolumes[k] > 0) {
-              mergedVols[k] = newVolumes[k];
-              if (!newActive.includes(k)) {
-                  newActive.push(k);
-              }
-          }
-      });
-      setVolumes(mergedVols);
-      setActiveSoundIds(newActive);
-      setCurrentView('mixer');
-      setIsPlaying(true);
-  };
-
-  // Audio Engine Hook
+  // Audio Engine Hook — Web Audio API for visualizer
   useEffect(() => {
+    // Create AudioContext and AnalyserNode (lazily, once)
+    const initAudioContext = () => {
+      if (audioContextRef.current) return;
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+      analyser.connect(ctx.destination);
+      audioContextRef.current = ctx;
+      analyserRef.current = analyser;
+    };
+
     ALL_SOUNDS_FLAT.forEach(sound => {
       const audio = new Audio(`/sounds/${sound.file}`);
-      audio.loop = true; 
+      audio.loop = true;
       audio.preload = 'auto';
+      audio.crossOrigin = 'anonymous';
       audioRefs.current[sound.id] = audio;
     });
+
     // Set initial volumes
     ['rain', 'ocean', 'forest'].forEach(id => {
-       handleVolumeChange(id, 50); 
+       handleVolumeChange(id, 50);
     });
 
-    return () => Object.values(audioRefs.current).forEach(audio => { audio.pause(); audio.src = ''; });
+    // Init audio context on first user interaction
+    const handleInteraction = () => {
+      initAudioContext();
+      document.removeEventListener('click', handleInteraction);
+    };
+    document.addEventListener('click', handleInteraction);
+
+    return () => {
+      document.removeEventListener('click', handleInteraction);
+      Object.values(audioRefs.current).forEach(audio => { audio.pause(); audio.src = ''; });
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close();
+      }
+    };
   }, []);
 
+  // Volume sync — route through Web Audio API gain nodes
   useEffect(() => {
+    const ctx = audioContextRef.current;
+    const analyser = analyserRef.current;
+
     Object.keys(volumes).forEach(id => {
       const audio = audioRefs.current[id];
       const volumeLevel = volumes[id] / 100;
-      if (audio) {
-        audio.volume = volumeLevel;
-        if (isPlaying && volumeLevel > 0) {
-          if (audio.paused) audio.play().catch(e => console.warn(`Autoplay prevented for ${id}`, e));
-        } else {
-          if (!audio.paused) audio.pause();
+      if (!audio) return;
+
+      // Connect to Web Audio API graph if context is ready and not yet connected
+      if (ctx && analyser && !sourceNodesRef.current[id]) {
+        try {
+          const source = ctx.createMediaElementSource(audio);
+          const gain = ctx.createGain();
+          source.connect(gain);
+          gain.connect(analyser);
+          sourceNodesRef.current[id] = source;
+          gainNodesRef.current[id] = gain;
+        } catch(e) {
+          // Already connected — ignore
         }
+      }
+
+      // Set volume via GainNode if available, otherwise fallback
+      const gainNode = gainNodesRef.current[id];
+      if (gainNode) {
+        gainNode.gain.value = volumeLevel;
+      } else {
+        audio.volume = volumeLevel;
+      }
+
+      // Play/pause logic
+      if (isPlaying && volumeLevel > 0) {
+        if (audio.paused) {
+          if (ctx && ctx.state === 'suspended') ctx.resume();
+          audio.play().catch(e => console.warn(`Autoplay prevented for ${id}`, e));
+        }
+      } else {
+        if (!audio.paused) audio.pause();
       }
     });
   }, [volumes, isPlaying]);
@@ -634,7 +1053,7 @@ export default function AudioAmbientApp() {
 
         const renderedBuffer = await offlineCtx.startRendering();
         const wavData = audioBufferToWav(renderedBuffer);
-        const blob = new Blob([new DataView(wavData)], { type: 'audio/wav' });
+        const blob = new Blob([wavData], { type: 'audio/wav' });
         const url = URL.createObjectURL(blob);
 
         const a = document.createElement('a');
@@ -643,8 +1062,12 @@ export default function AudioAmbientApp() {
         a.download = `AudioAmbient_Mix_${downloadDuration}min.wav`;
         document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        
+        // Delay revocation to ensure browser captures the filename/extension
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+          if (document.body.contains(a)) document.body.removeChild(a);
+        }, 100);
         
         setIsExportModalOpen(false);
     } catch (error) {
@@ -667,7 +1090,8 @@ export default function AudioAmbientApp() {
     addToMixer: (id) => { handleVolumeChange(id, 30); }, 
     removeFromMixer: (id) => { setActiveSoundIds(p=>p.filter(s=>s!==id)); handleVolumeChange(id, 0); },
     onExportClick: () => setIsExportModalOpen(true),
-    onSaveMix: handleSaveMix
+    onSaveMix: handleSaveMix,
+    analyserRef
   };
 
   return (
@@ -677,11 +1101,9 @@ export default function AudioAmbientApp() {
 
       {currentView !== 'home' && <SideNavBar currentView={currentView} setCurrentView={setCurrentView} />}
       
-      {currentView === 'home' && <HomePage navigateToMixer={() => setCurrentView('mixer')} navigateToLibrary={() => setCurrentView('library')} />}
+      {currentView === 'home' && <HomePage navigateToMixer={() => setCurrentView('mixer')} navigateToLibrary={() => setCurrentView('library')} onLoadPreset={(preset) => { const newVols = { ...ALL_SOUNDS_FLAT.reduce((acc, s) => ({ ...acc, [s.id]: 0 }), {}) }; const ids = []; Object.entries(preset.sounds).forEach(([id, vol]) => { newVols[id] = vol; ids.push(id); }); setVolumes(newVols); setActiveSoundIds(ids); setCurrentView('mixer'); setIsPlaying(true); }} />}
       {currentView === 'library' && <LibraryPage setCurrentView={setCurrentView} savedSoundscapes={savedSoundscapes} onLoadSoundscape={onLoadSoundscape} />}
       {currentView === 'mixer' && <MixerPage {...mixerProps} />}
-
-      <Copilot applyMixerLevels={applyMixerLevels} />
 
       {/* Export Modal */}
       {isExportModalOpen && (
