@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import AiSoundscapePrompt from '@/components/AiSoundscapePrompt';
+import { SOUND_METADATA } from '@/lib/soundCategories';
 
 // --- WAV Encoder Helper ---
 function audioBufferToWav(buffer) {
@@ -496,7 +497,7 @@ const HorizontalVolumeSlider = ({ value, onChange, soundId }) => (
 );
 
 // --- Mixer View (Redesigned Two-Column Layout) ---
-const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlaying, setActiveSoundIds, handleVolumeChange, togglePlay, addToMixer, removeFromMixer, onExportClick, onSaveMix, analyserRef, onApplyAiMix, onRevertMix, canRevert }) => {
+const MixerPage = ({ volumes, pans = {}, activeSoundIds, isPlaying, setVolumes, setIsPlaying, setActiveSoundIds, handleVolumeChange, handlePanChange, togglePlay, addToMixer, removeFromMixer, onExportClick, onSaveMix, onExportRecipe, onImportRecipe, analyserRef, visualizerCanvasRef, onApplyAiMix, onRevertMix, canRevert }) => {
   const activeMixerSounds = useMemo(() => activeSoundIds.map(id => SOUND_MAP[id]).filter(Boolean), [activeSoundIds]);
   const [browserOpen, setBrowserOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('Nature');
@@ -647,7 +648,7 @@ const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlayin
         <div className="w-[320px] shrink-0 now-playing-panel flex flex-col items-center px-6 pt-8 pb-24 overflow-y-auto">
           {/* Visualizer */}
           <div className="visualizer-ring rounded-full mb-4">
-            <WaveformVisualizer isPlaying={isPlaying} />
+            <WaveformVisualizer isPlaying={isPlaying} canvasRef={visualizerCanvasRef} />
           </div>
 
           {/* Now Playing Info */}
@@ -728,7 +729,7 @@ const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlayin
         <div className="flex justify-center py-3 mb-2">
           <div className="scale-75 origin-center">
             <div className="visualizer-ring rounded-full">
-              <WaveformVisualizer analyserRef={analyserRef} isPlaying={isPlaying} />
+              <WaveformVisualizer analyserRef={analyserRef} isPlaying={isPlaying} canvasRef={visualizerCanvasRef} />
             </div>
           </div>
         </div>

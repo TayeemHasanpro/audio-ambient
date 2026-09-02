@@ -43,7 +43,8 @@ next-env.d.ts
 .vercel
 # maintenance
 db_setup.js
-/scripts
+/scripts/*
+!/scripts/render-ambient.js
 
 # sensitive keys
 *.json
