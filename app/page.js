@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import AiSoundscapePrompt from '@/components/AiSoundscapePrompt';
 
 // --- WAV Encoder Helper ---
 function audioBufferToWav(buffer) {
@@ -49,51 +50,76 @@ function audioBufferToWav(buffer) {
 // --- Configuration: Sound Library ---
 const ALL_SOUNDS_CONFIG = {
   Nature: [
-    { id: 'rain', name: 'Rain', category: 'Nature', icon: 'water_drop', file: 'rain.mp3', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1Fktw8woiWqx41ZqOl5JY8m6SnBBZ-EFTb_Us_7s2qNFl-GC3XmNZ0rWsUW-seOsNDvW-0e11x6GN15kAEHdeOVzvxL7uluvoG7MWo76rfuNyZsccgSwPxFbb0S2ZysnJ2B4Oa1c0NEDSaO_WPH-LM9Mt_9xqFlBc_6zEvC53OHxQXUzpk09edIaeTwV40Q9CqBgmVGEa8_DvvqBcro9KAr4Br78E32whYR4F6DbqFXEZn1kRYDg5DPicqas-hOYA1-jCGSlkT38' },
-    { id: 'ocean', name: 'Ocean Waves', category: 'Nature', icon: 'waves', file: 'ocean.mp3', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAlWuwOzX7_T6uxwjvdiSHwZIigQ7BFz-ON2iYuICDpT2p1ugVdS2IKizENE_b1ZOXoKVMgH5b0BC7UmpeCWbjpDZDypIkiubFthzeg224E-kflYV8fYOvLpJbzAGvzidxvQfhjUxvssk0CSp1iD-Hgu0p-kRLMyLqwNTZ0xl5iN15WUg7z0DNxAIITeKQgsg_y2hHuxCIMeNhFzCGeCBOvElG2UJC77nBOWP2bK1B4MWvNVBUZ81nDaZWruGpqHcJUpIzb4Ku9u8c' },
-    { id: 'forest', name: 'Forest Birds', category: 'Nature', icon: 'forest', file: 'Forest Birds.mp3', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAmqdJL30I4z3hB2Cbh4xo2t-oUIEsI2-ANN0kwkkDQU0-cf3-YJFbAVQX91oiJEApRSMYFr8swNXSp7QawMT5_dbEIPXfq_xNLrwhSRynDpe7lLo6Mh9_esLlmP5wkVZ7dkHjDVbODbTdZ2NsYpOfBV1yxjB3Ga0CYlKxPpQIbQrY4RFgthTaT7xK3BGorcqdZ59yQjv8uKV9CQLTOBDZ7-6ICpBpgdeDBH667jDgT5Rj760MKGgYOB635RIBO-EGuohOtyIN08DQ' },
-    { id: 'wind', name: 'Wind', category: 'Nature', icon: 'air', file: 'Strong Gusty Wind.mp3', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDn6_KCyvGgCLSifncjVSfs2fK1C4I3lvoZmx0VWFfCAb7bYMdWWJvXp9eV9Xg0Ae9zvYrIawPrWDHRpsx9UpoQI8_o0naheKZxfuG-dx-34O9rC2NTIKyxmoROPFTX2O3BVCSwbp-dE6KpLU5uiBfVF1MA6-IvnatCDSMvAhdgjz_vm2gWrv4Q5S5IMeFsD4Xvoc5UosXNRty6ThSe8FHWCK77KHEsmNK_wiqoXrfE-W50tHN-TNwZSPd8br60P3FMTU_t2e1EUUk' },
-    { id: 'fireplace', name: 'Campfire', category: 'Nature', icon: 'local_fire_department', file: 'Campfire.mp3', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDT4IMwy8G6Uzw5NNKAgRSkaw2XWw34ifeoa2c6rnHH8dBKYeeZjNOcvTlZSk5WyBBL3Ogqmikb9oU8p7MYqCnKK_XJREc3dud9PouGrnff5IDsLIjyOXaCRk1yKRqvSMU2t-on8XDzbm84FbrDQ_o4oFFyBd8UWdEx3GmeBur_TNQezrejK4EWygiVN474KCtqyvPJDh3LGto4qmicat2Ry0VvHDIOFM1A1vhgfefw0_G_hADrxIDAlorlqg1vx6N5cS682ZJ5HSQ' },
-    { id: 'afternoon_open_field', name: 'Afternoon Open Field', category: 'Nature', icon: 'eco', file: 'Afternoon Open field.mp3' },
-    { id: 'crickets_insects', name: 'Crickets & Insects', category: 'Nature', icon: 'bug_report', file: 'Crickets and Insects.mp3' },
-    { id: 'crickets', name: 'Crickets', category: 'Nature', icon: 'bug_report', file: 'Crickets.mp3' },
-    { id: 'dawn_skyline', name: 'Dawn Skyline', category: 'Nature', icon: 'wb_sunny', file: 'Dawn skyline.mp3' },
-    { id: 'grasshopper_summer', name: 'Summer Grasshopper', category: 'Nature', icon: 'bug_report', file: 'Grasshopper - Summer.mp3' },
-    { id: 'insect', name: 'Insect', category: 'Nature', icon: 'bug_report', file: 'Insect.mp3' },
-    { id: 'nature', name: 'Nature', category: 'Nature', icon: 'landscape', file: 'Nature.mp3' },
-    { id: 'rising_summer_rain', name: 'Rising Summer Rain', category: 'Nature', icon: 'rainy', file: 'Rising summer rain.mp3' },
-    { id: 'summer_birds_singing', name: 'Summer Birds', category: 'Nature', icon: 'flutter_dash', file: 'Summer Birds Singing.mp3' },
-    { id: 'summer_cicadas', name: 'Summer Cicadas', category: 'Nature', icon: 'bug_report', file: 'Summer Cicadas.mp3' },
-    { id: 'summer_forest', name: 'Summer Forest', category: 'Nature', icon: 'forest', file: 'Summer Forest.mp3' },
-    { id: 'summer_morning', name: 'Summer Morning', category: 'Nature', icon: 'wb_twilight', file: 'Summer Morning.mp3' },
-    { id: 'summer_night', name: 'Summer Night', category: 'Nature', icon: 'nights_stay', file: 'Summer Night.mp3' },
-    { id: 'wind_01', name: 'Wind 01', category: 'Nature', icon: 'air', file: 'Wind 01.mp3' },
-    { id: 'wind_02', name: 'Wind 02', category: 'Nature', icon: 'air', file: 'Wind 02.mp3' },
-    { id: 'wind_03', name: 'Wind 03', category: 'Nature', icon: 'air', file: 'Wind 03.mp3' },
-    { id: 'windy_residential', name: 'Windy Residential', category: 'Nature', icon: 'air', file: 'Windy Residential.mp3' },
+    { id: 'rain_on_leaves', name: 'Rain on Leaves', category: 'Nature', icon: 'water_drop', file: 'Rain on Leaves.mp3' },
+    { id: 'rain_on_tent', name: 'Rain on Tent', category: 'Nature', icon: 'water_drop', file: 'Rain on Tent.mp3' },
+    { id: 'rain_on_umbrella', name: 'Rain on Umbrella', category: 'Nature', icon: 'water_drop', file: 'Rain On Umbrella.mp3' },
+    { id: 'rain_on_window', name: 'Rain on Window', category: 'Nature', icon: 'water_drop', file: 'rain-on-window.mp3' },
+    { id: 'soft_rain', name: 'Soft Rain', category: 'Nature', icon: 'water_drop', file: 'Soft Rain.mp3' },
+    { id: 'strong_rain_thunders', name: 'Rain & Thunders', category: 'Nature', icon: 'thunderstorm', file: 'Strong rain with rolling thunders.mp3' },
+    { id: 'river_peaceful', name: 'Peaceful River', category: 'Nature', icon: 'waves', file: 'River Peaceful.mp3' },
+    { id: 'waterfall', name: 'Waterfall', category: 'Nature', icon: 'water', file: 'Waterfall.mp3' },
+    { id: 'spring_birds', name: 'Spring Birds', category: 'Nature', icon: 'flutter_dash', file: 'Spring Birds.mp3' },
+    { id: 'crows', name: 'Crows', category: 'Nature', icon: 'flutter_dash', file: 'Crows.mp3' },
+    { id: 'ducks_on_field', name: 'Ducks on Field', category: 'Nature', icon: 'flutter_dash', file: 'ducks on field.mp3' },
+    { id: 'frogs_ambience', name: 'Frogs Ambience', category: 'Nature', icon: 'eco', file: 'Frogs ambience.mp3' },
+    { id: 'howling_polar_wind', name: 'Howling Polar Wind', category: 'Nature', icon: 'air', file: 'Howling hissy polar wind.mp3' },
+    { id: 'winter_whistling_wind', name: 'Winter Wind', category: 'Nature', icon: 'air', file: 'Winter whistling wind.mp3' },
+    { id: 'rustling_leaves', name: 'Rustling Leaves', category: 'Nature', icon: 'eco', file: 'Rustling Leaves.mp3' },
+    { id: 'seagull_in_town', name: 'Seagulls in Town', category: 'Nature', icon: 'flutter_dash', file: 'Seagull in town.mp3' },
+    { id: 'wooden_windbells_wind', name: 'Wooden Windbells', category: 'Nature', icon: 'hearing', file: 'Wooden Windbells on Wind.mp3' },
+    { id: 'walking_on_rocks', name: 'Walking on Rocks', category: 'Nature', icon: 'directions_walk', file: 'Walking On Rocks.mp3' },
+    { id: 'walking_on_snow', name: 'Walking on Snow', category: 'Nature', icon: 'directions_walk', file: 'Walking on Snow.mp3' },
+    { id: 'walking_tall_grass', name: 'Walking in Grass', category: 'Nature', icon: 'directions_walk', file: 'Walking in very tall grass.mp3' },
+    { id: 'walking_gravel_mono', name: 'Walking on Gravel', category: 'Nature', icon: 'directions_walk', file: 'Walking on gravel way mono.mp3' },
+    { id: 'crossroads_after_raining', name: 'Street After Rain', category: 'Nature', icon: 'rainy', file: 'crossroads-street-after-raining.mp3' }
   ],
   Ambient: [
-    { id: 'brown', name: 'Brown Noise', category: 'Ambient', icon: 'noise_aware', file: 'brown.mp3' },
-    { id: 'white', name: 'White Noise', category: 'Ambient', icon: 'radio', file: 'white.mp3' },
-    { id: 'binaural', name: 'Binaural', category: 'Ambient', icon: 'headphones', file: 'brown.mp3' },
-    { id: 'cafe', name: 'Cafe', category: 'Ambient', icon: 'local_cafe', file: 'cafe.mp3' },
+    { id: 'low_hum', name: 'Low Hum', category: 'Ambient', icon: 'noise_aware', file: 'Low Hum.mp3' },
+    { id: 'magnetic_hum', name: 'Magnetic Hum', category: 'Ambient', icon: 'noise_aware', file: 'Magnetic Hum.mp3' },
+    { id: 'mysterious_muted_dimension', name: 'Muted Dimension', category: 'Ambient', icon: 'blur_on', file: 'Mysterious Muted Dimension.mp3' },
+    { id: 'pink_noise', name: 'Pink Noise', category: 'Ambient', icon: 'blur_on', file: 'Pink Noise.mp3' },
+    { id: 'static_white_noise', name: 'Static White Noise', category: 'Ambient', icon: 'blur_on', file: 'Static white noise.mp3' },
+    { id: 'space_drift', name: 'Space Drift', category: 'Ambient', icon: 'rocket_launch', file: 'Space Drift.mp3' },
+    { id: 'tibetan_singing_bowl', name: 'Tibetan Bowl', category: 'Ambient', icon: 'self_improvement', file: 'Tibetan singing Bowl.mp3' },
+    { id: 'ethereal_loop', name: 'Ethereal Loop', category: 'Ambient', icon: 'spa', file: 'Ethereal Loop.mp3' },
+    { id: 'electric_loop_synth_hum', name: 'Synth Field Hum', category: 'Ambient', icon: 'settings_input_antenna', file: 'Electric Loop Synth Field Humming.mp3' },
+    { id: 'energy_hum', name: 'Energy Hum', category: 'Ambient', icon: 'bolt', file: 'Energy Hum.mp3' },
+    { id: 'delta_range', name: 'Delta Range', category: 'Ambient', icon: 'waves', file: 'delta-range.mp3' },
+    { id: 'enote', name: 'E-Note', category: 'Ambient', icon: 'music_note', file: 'enote.mp3' },
+    { id: 'vinyl_warm_noise', name: 'Vinyl Warm Noise', category: 'Ambient', icon: 'album', file: 'vinyl warm noise.mp3' },
+    { id: 'washy_noises_background', name: 'Washy Noise', category: 'Ambient', icon: 'noise_control_off', file: 'Washy Noises Background.mp3' },
+    { id: 'radio_static', name: 'Radio Static', category: 'Ambient', icon: 'radio', file: 'radio-static.mp3' }
   ],
   Mechanical: [
-    { id: 'city', name: 'City', category: 'Mechanical', icon: 'location_city', file: 'city.mp3' },
-    { id: 'control_tower', name: 'Control Tower', category: 'Mechanical', icon: 'cell_tower', file: 'Control Tower.mp3' },
-    { id: 'diesel_train_passing', name: 'Diesel Train Passing', category: 'Mechanical', icon: 'train', file: 'Diesel Train Passing.mp3' },
-    { id: 'heathrow_air_traffic', name: 'Air Traffic', category: 'Mechanical', icon: 'flight', file: 'Heathrow Air Traffic.mp3' },
-    { id: 'trains_diesel_electric', name: 'Diesel Electric Train', category: 'Mechanical', icon: 'train', file: 'Trains Diesel Electric.mp3' },
+    { id: 'courtyard_ac', name: 'Courtyard AC', category: 'Mechanical', icon: 'ac_unit', file: 'Courtyard Air Condition.mp3' },
+    { id: 'steam_engine', name: 'Steam Engine', category: 'Mechanical', icon: 'train', file: 'Steam Engine.mp3' },
+    { id: 'subway_journey', name: 'Subway Journey', category: 'Mechanical', icon: 'subway', file: 'subway-metro-underground-journey.mp3' },
+    { id: 'washing_machine', name: 'Washing Machine', category: 'Mechanical', icon: 'local_laundry_service', file: 'Washing Machine Running.mp3' },
+    { id: 'windscreen_wiper', name: 'Windscreen Wiper', category: 'Mechanical', icon: 'opacity', file: 'Windscreen Wiper.mp3' },
+    { id: 'helicopter_in_flight', name: 'Helicopter Flight', category: 'Mechanical', icon: 'flight', file: 'Helicopter In Flight.mp3' },
+    { id: 'typewriter', name: 'Typewriter', category: 'Mechanical', icon: 'keyboard', file: 'typewriter.mp3' },
+    { id: 'laptop_typing_slow', name: 'Laptop Typing', category: 'Mechanical', icon: 'keyboard', file: 'Laptop Typing Slow.mp3' },
+    { id: 'grandfather_clock', name: 'Grandfather Clock', category: 'Mechanical', icon: 'schedule', file: 'Grandfather_clock_ticking.mp3' },
+    { id: 'slow_traffic_street', name: 'Slow Traffic', category: 'Mechanical', icon: 'traffic', file: 'Slow traffic busy street.mp3' },
+    { id: 'traffic_in_distance', name: 'Distant Traffic', category: 'Mechanical', icon: 'traffic', file: 'Traffic in distance.mp3' }
   ],
   Crowd: [
-    { id: 'arena_crowd', name: 'Arena Crowd', category: 'Crowd', icon: 'groups', file: 'Arena Crowd.mp3' },
-    { id: 'baby_crying', name: 'Baby Crying', category: 'Crowd', icon: 'child_care', file: 'Baby loud lament crying.mp3' },
-    { id: 'baseball_crowd', name: 'Baseball Crowd', category: 'Crowd', icon: 'sports_baseball', file: 'Baseball Crowd.mp3' },
-    { id: 'baseball_stadium', name: 'Baseball Stadium', category: 'Crowd', icon: 'stadium', file: 'Baseball Stadium Background.mp3' },
-    { id: 'basketball_crowd', name: 'Basketball Crowd', category: 'Crowd', icon: 'sports_basketball', file: 'Basketball Crowd.mp3' },
-    { id: 'kids_amusement', name: 'Amusement Park', category: 'Crowd', icon: 'attractions', file: 'Kids In Amusement Park.mp3' },
-    { id: 'village_playground', name: 'Village Playground', category: 'Crowd', icon: 'sports_gymnastics', file: 'Village And Playground.mp3' },
-    { id: 'prisoner_chains', name: 'Prisoner Chains', category: 'Crowd', icon: 'link', file: 'Prisoner in chains heavy footsteps.mp3' },
+    { id: 'public_gym', name: 'Public Gym', category: 'Crowd', icon: 'fitness_center', file: 'Public Gym.mp3' },
+    { id: 'supermarket', name: 'Supermarket', category: 'Crowd', icon: 'shopping_cart', file: 'Supermarket.mp3' },
+    { id: 'quiet_library', name: 'Quiet Library', category: 'Crowd', icon: 'local_library', file: 'quiet-library-ambience.mp3' },
+    { id: 'rowing_boat', name: 'Rowing Boat', category: 'Crowd', icon: 'rowing', file: 'Rowing Boat.mp3' },
+    { id: 'sizzling_oil', name: 'Sizzling Oil', category: 'Crowd', icon: 'hearing', file: 'Sizzling Oil.mp3' },
+    { id: 'small_chimes', name: 'Small Chimes', category: 'Crowd', icon: 'notifications', file: 'Small Chimes.mp3' },
+    { id: 'underwater_bubbles', name: 'Underwater Bubbles', category: 'Crowd', icon: 'bubble_chart', file: 'Underwater Bubbles.mp3' },
+    { id: 'distant_fireworks', name: 'Distant Fireworks', category: 'Crowd', icon: 'celebration', file: 'Distant Punchy Fireworks.mp3' },
+    { id: 'footsteps_clothes', name: 'Footsteps & Clothes', category: 'Crowd', icon: 'directions_run', file: 'Footsteps and Clothes.mp3' },
+    { id: 'hair_cut', name: 'Hair Cut', category: 'Crowd', icon: 'content_cut', file: 'Hair cut.mp3' },
+    { id: 'happy_dog_indoor', name: 'Happy Dog Indoor', category: 'Crowd', icon: 'pets', file: 'Happy dog running indoor.mp3' },
+    { id: 'rural_tin_roof_drips', name: 'Tin Roof Drips', category: 'Crowd', icon: 'water_drop', file: 'Rural Tin Roof Drips.mp3' },
+    { id: 'pencil_writing', name: 'Pencil Writing', category: 'Crowd', icon: 'edit', file: 'Pencil Writing.mp3' },
+    { id: 'sweeping_pavement', name: 'Sweeping Pavement', category: 'Crowd', icon: 'cleaning_services', file: 'Sweeping Pavement.mp3' },
+    { id: 'glass_rolling_stone', name: 'Glass Rolling', category: 'Crowd', icon: 'hourglass_empty', file: 'Glass Rolling on Stone Surface.mp3' },
+    { id: 'newspaper_pages', name: 'Newspaper Pages', category: 'Crowd', icon: 'menu_book', file: 'Turn Newspaper Pages.mp3' }
   ]
 };
 
@@ -102,26 +128,16 @@ const SOUND_MAP = ALL_SOUNDS_FLAT.reduce((acc, sound) => { acc[sound.id] = sound
 
 // --- Quick-Start Presets ---
 const PRESETS = [
-  { name: 'Deep Focus', icon: 'psychology', tag: 'Work', desc: 'Brown noise + rain for flow state', color: 'from-blue-500/20 to-cyan-500/20', sounds: { brown: 60, rain: 40, cafe: 15 } },
-  { name: 'Rainy Morning', icon: 'coffee', tag: 'Relax', desc: 'Gentle rain with a café backdrop', color: 'from-amber-500/20 to-orange-500/20', sounds: { rain: 55, cafe: 35, forest: 20 } },
-  { name: 'Night Forest', icon: 'dark_mode', tag: 'Sleep', desc: 'Crickets, wind & crackling campfire', color: 'from-emerald-500/20 to-teal-500/20', sounds: { crickets: 45, wind: 30, fireplace: 50 } },
-  { name: 'Ocean Drift', icon: 'sailing', tag: 'Relax', desc: 'Waves and wind for deep relaxation', color: 'from-indigo-500/20 to-purple-500/20', sounds: { ocean: 60, wind: 25, white: 10 } },
-  { name: 'City Commute', icon: 'train', tag: 'Vibe', desc: 'Train rhythms and urban white noise', color: 'from-slate-500/20 to-zinc-500/20', sounds: { diesel_train_passing: 40, city: 30, white: 20 } },
-  { name: 'Summer Meadow', icon: 'wb_sunny', tag: 'Relax', desc: 'Warm birds, gentle breeze & cicadas', color: 'from-yellow-500/20 to-lime-500/20', sounds: { summer_birds_singing: 50, wind: 20, summer_cicadas: 35 } },
-  { name: 'Study Lounge', icon: 'menu_book', tag: 'Work', desc: 'Café chatter with brown noise blanket', color: 'from-rose-500/20 to-pink-500/20', sounds: { cafe: 40, brown: 50, rain: 15 } },
-  { name: 'Storm Watch', icon: 'thunderstorm', tag: 'Sleep', desc: 'Heavy rain, howling wind & thunder', color: 'from-gray-500/20 to-blue-500/20', sounds: { rising_summer_rain: 60, wind_02: 45, ocean: 20 } },
-  { name: 'Wilderness Camp', icon: 'camping', tag: 'Vibe', desc: 'Crackling campfire under open skies', color: 'from-orange-500/20 to-red-500/20', sounds: { fireplace: 55, crickets: 35, wind: 15, nature: 25 } },
-  { name: 'White Cocoon', icon: 'noise_aware', tag: 'Work', desc: 'Pure white noise for total isolation', color: 'from-neutral-500/20 to-stone-500/20', sounds: { white: 70, brown: 20 } },
-  { name: 'Dawn Chorus', icon: 'wb_twilight', tag: 'Relax', desc: 'Birdsong at sunrise in a quiet field', color: 'from-sky-500/20 to-cyan-500/20', sounds: { dawn_skyline: 55, summer_morning: 40, wind: 10 } },
-  { name: 'Control Tower', icon: 'flight', tag: 'Vibe', desc: 'Air traffic radio & airport ambience', color: 'from-teal-500/20 to-emerald-500/20', sounds: { control_tower: 50, heathrow_air_traffic: 40, white: 10 } },
-  { name: 'Reading Nook', icon: 'auto_stories', tag: 'Work', desc: 'Soft birds and protective brown noise', color: 'from-amber-700/20 to-yellow-600/20', sounds: { forest: 25, wind_01: 20, brown: 45 } },
-  { name: 'Cozy Cabin', icon: 'house', tag: 'Relax', desc: 'Roaring fire and gusty mountain wind', color: 'from-red-600/20 to-orange-600/20', sounds: { fireplace: 65, wind: 50, rain: 20 } },
-  { name: 'Urban Rain', icon: 'location_city', tag: 'Relax', desc: 'City hum under a curtain of rainfall', color: 'from-blue-700/20 to-indigo-700/20', sounds: { city: 35, rain: 60, white: 15 } },
-  { name: 'Autumn Breeze', icon: 'eco', tag: 'Sleep', desc: 'Cool wind through trees and crickets', color: 'from-orange-400/20 to-yellow-700/20', sounds: { wind_02: 40, crickets: 35, nature: 30 } },
-  { name: 'Mountain Top', icon: 'landscape', tag: 'Relax', desc: 'Pristine high-altitude wind and dawn', color: 'from-cyan-700/20 to-blue-900/20', sounds: { wind: 60, wind_03: 35, dawn_skyline: 45 } },
-  { name: 'Crowded Cafe', icon: 'local_cafe', tag: 'Vibe', desc: 'The bustling energy of a full bistro', color: 'from-brown-500/20 to-amber-900/20', sounds: { cafe: 65, city: 25, arena_crowd: 10 } },
-  { name: 'Binaural Flow', icon: 'headphones', tag: 'Work', desc: 'Deep focus with binaural rain layers', color: 'from-purple-700/20 to-indigo-900/20', sounds: { binaural: 50, brown: 40, rain: 25 } },
-  { name: 'Summer Eve', icon: 'nights_stay', tag: 'Sleep', desc: 'Warm night air and field insects', color: 'from-indigo-900/20 to-black/20', sounds: { summer_night: 55, crickets_insects: 40, wind_01: 15 } },
+  { name: 'Deep Focus', icon: 'psychology', tag: 'Work', desc: 'Low hum + soft rain for flow state', color: 'from-blue-500/20 to-cyan-500/20', sounds: { low_hum: 60, soft_rain: 40, quiet_library: 15 } },
+  { name: 'Rainy Morning', icon: 'coffee', tag: 'Relax', desc: 'Gentle rain with a library backdrop', color: 'from-amber-500/20 to-orange-500/20', sounds: { soft_rain: 55, quiet_library: 35, spring_birds: 20 } },
+  { name: 'Night Forest', icon: 'dark_mode', tag: 'Sleep', desc: 'Frogs, wind & crackling chimes', color: 'from-emerald-500/20 to-teal-500/20', sounds: { frogs_ambience: 45, howling_polar_wind: 30, small_chimes: 50 } },
+  { name: 'Space Drift', icon: 'sailing', tag: 'Relax', desc: 'Ethereal synth for deep relaxation', color: 'from-indigo-500/20 to-purple-500/20', sounds: { space_drift: 60, ethereal_loop: 25, static_white_noise: 10 } },
+  { name: 'City Commute', icon: 'train', tag: 'Vibe', desc: 'Subway rhythms and urban traffic', color: 'from-slate-500/20 to-zinc-500/20', sounds: { subway_journey: 40, slow_traffic_street: 30, delta_range: 20 } },
+  { name: 'Summer Meadow', icon: 'wb_sunny', tag: 'Relax', desc: 'Warm birds, gentle breeze & frogs', color: 'from-yellow-500/20 to-lime-500/20', sounds: { spring_birds: 50, winter_whistling_wind: 20, frogs_ambience: 35 } },
+  { name: 'Study Lounge', icon: 'menu_book', tag: 'Work', desc: 'Quiet library with warm hum background', color: 'from-rose-500/20 to-pink-500/20', sounds: { quiet_library: 40, low_hum: 50, soft_rain: 15 } },
+  { name: 'Storm Watch', icon: 'thunderstorm', tag: 'Sleep', desc: 'Heavy rain, howling wind & thunder', color: 'from-gray-500/20 to-blue-500/20', sounds: { strong_rain_thunders: 60, winter_whistling_wind: 45, waterfall: 20 } },
+  { name: 'Reading Nook', icon: 'auto_stories', tag: 'Work', desc: 'Soft birds and protective hum noise', color: 'from-amber-700/20 to-yellow-600/20', sounds: { spring_birds: 25, low_hum: 45 } },
+  { name: 'Cozy Cabin', icon: 'house', tag: 'Relax', desc: 'Rain on window and fireplace wind', color: 'from-red-600/20 to-orange-600/20', sounds: { rain_on_window: 65, howling_polar_wind: 50, wooden_windbells_wind: 20 } },
 ];
 
 // --- HomePage View ---
@@ -192,7 +208,7 @@ const HomePage = ({ navigateToMixer, navigateToLibrary, onLoadPreset }) => {
                 <span className="material-symbols-outlined text-secondary text-4xl">forest</span>
                 <div>
                     <h3 className="font-headline text-2xl mb-2">Organic Textures</h3>
-                    <p className="text-sm text-on-surface-variant font-light leading-relaxed">Field recordings from the world's most remote landscapes, captured in 96kHz/24-bit resolution.</p>
+                    <p className="text-sm text-on-surface-variant font-light leading-relaxed">Field recordings from the world&apos;s most remote landscapes, captured in 96kHz/24-bit resolution.</p>
                 </div>
             </div>
             <div className="md:col-span-4 bg-surface-container-low rounded-3xl p-8 md:p-10 flex flex-col gap-4 md:gap-6 group hover:bg-surface-container transition-colors duration-500">
@@ -388,7 +404,7 @@ const LibraryPage = ({ setCurrentView, savedSoundscapes, onLoadSoundscape }) => 
 );
 
 // --- Component: Circular Waveform Visualizer (Web Audio API) ---
-const WaveformVisualizer = ({ analyserRef, isPlaying }) => {
+const WaveformVisualizer = ({ isPlaying }) => {
   const canvasRef = useRef(null);
   const animFrameRef = useRef(null);
 
@@ -405,15 +421,6 @@ const WaveformVisualizer = ({ analyserRef, isPlaying }) => {
       const W = 200, H = 200, cx = W / 2, cy = H / 2, R = 72;
       ctx.clearRect(0, 0, W, H);
 
-      const analyser = analyserRef.current;
-      let dataArray;
-      if (analyser) {
-        dataArray = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(dataArray);
-      } else {
-        dataArray = new Uint8Array(128).fill(0);
-      }
-
       // Outer glow ring
       ctx.beginPath();
       ctx.arc(cx, cy, R + 20, 0, Math.PI * 2);
@@ -421,13 +428,19 @@ const WaveformVisualizer = ({ analyserRef, isPlaying }) => {
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      // Draw circular frequency bars
+      const time = Date.now() * 0.004;
       const bars = 64;
-      const step = Math.floor(dataArray.length / bars);
       for (let i = 0; i < bars; i++) {
-        const val = dataArray[i * step] / 255;
+        let val = 0;
+        if (isPlaying) {
+          // Generate a smooth wave circular visualizer
+          val = 0.2 + 0.4 * Math.sin(i * 0.22 - time) + 0.3 * Math.cos(i * 0.41 + time * 0.7);
+          val = Math.max(0.02, val * (0.85 + 0.15 * Math.sin(time * 2.1)));
+        } else {
+          val = 0.02;
+        }
         const angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
-        const barLen = 8 + val * 40;
+        const barLen = 8 + val * 35;
         const innerR = R - 4;
         const x1 = cx + Math.cos(angle) * innerR;
         const y1 = cy + Math.sin(angle) * innerR;
@@ -464,7 +477,7 @@ const WaveformVisualizer = ({ analyserRef, isPlaying }) => {
 
     draw();
     return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
-  }, [analyserRef, isPlaying]);
+  }, [isPlaying]);
 
   return <canvas ref={canvasRef} className="w-[200px] h-[200px]" style={{ width: 200, height: 200 }} />;
 };
@@ -483,7 +496,7 @@ const HorizontalVolumeSlider = ({ value, onChange, soundId }) => (
 );
 
 // --- Mixer View (Redesigned Two-Column Layout) ---
-const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlaying, setActiveSoundIds, handleVolumeChange, togglePlay, addToMixer, removeFromMixer, onExportClick, onSaveMix, analyserRef }) => {
+const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlaying, setActiveSoundIds, handleVolumeChange, togglePlay, addToMixer, removeFromMixer, onExportClick, onSaveMix, analyserRef, onApplyAiMix, onRevertMix, canRevert }) => {
   const activeMixerSounds = useMemo(() => activeSoundIds.map(id => SOUND_MAP[id]).filter(Boolean), [activeSoundIds]);
   const [browserOpen, setBrowserOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('Nature');
@@ -526,7 +539,7 @@ const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlayin
         {/* --- LEFT COLUMN: Track List + Controls --- */}
         <div className="flex-1 flex flex-col min-w-0 px-8 pt-6 pb-24 overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between mb-5 shrink-0">
+          <div className="flex items-center justify-between mb-4 shrink-0">
             <div>
               <h2 className="font-headline text-2xl font-light text-on-surface tracking-tight">
                 {activeMixerSounds.length > 0 ? 'Your Mix' : 'Start Mixing'}
@@ -539,6 +552,16 @@ const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlayin
               <span className="material-symbols-outlined text-base">{browserOpen ? 'close' : 'add_circle'}</span>
               {browserOpen ? 'Close' : 'Add Sounds'}
             </button>
+          </div>
+
+          {/* AI Soundscape Generator Prompt Box (Desktop) */}
+          <div className="shrink-0">
+            <AiSoundscapePrompt
+              onApplyMix={onApplyAiMix}
+              activeSoundCount={activeMixerSounds.length}
+              onRevertMix={onRevertMix}
+              canRevert={canRevert}
+            />
           </div>
 
           {/* Sound Browser Panel (inline, toggleable) */}
@@ -624,7 +647,7 @@ const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlayin
         <div className="w-[320px] shrink-0 now-playing-panel flex flex-col items-center px-6 pt-8 pb-24 overflow-y-auto">
           {/* Visualizer */}
           <div className="visualizer-ring rounded-full mb-4">
-            <WaveformVisualizer analyserRef={analyserRef} isPlaying={isPlaying} />
+            <WaveformVisualizer isPlaying={isPlaying} />
           </div>
 
           {/* Now Playing Info */}
@@ -689,6 +712,16 @@ const MixerPage = ({ volumes, activeSoundIds, isPlaying, setVolumes, setIsPlayin
               <span className="material-symbols-outlined text-lg">download</span>
             </button>
           </div>
+        </div>
+
+        {/* AI Soundscape Generator Prompt Box (Mobile) */}
+        <div className="px-4 shrink-0">
+          <AiSoundscapePrompt
+            onApplyMix={onApplyAiMix}
+            activeSoundCount={activeMixerSounds.length}
+            onRevertMix={onRevertMix}
+            canRevert={canRevert}
+          />
         </div>
 
         {/* Mobile Visualizer (compact) */}
@@ -844,18 +877,67 @@ export default function AudioAmbientApp() {
   const [currentView, setCurrentView] = useState('home'); // 'home', 'library', 'mixer'
   const [isPlaying, setIsPlaying] = useState(false);
   const [volumes, setVolumes] = useState(ALL_SOUNDS_FLAT.reduce((acc, sound) => ({ ...acc, [sound.id]: 0 }), {}));
-  const [activeSoundIds, setActiveSoundIds] = useState(['rain', 'ocean', 'forest']);
+  const [activeSoundIds, setActiveSoundIds] = useState(['soft_rain', 'spring_birds', 'waterfall']);
   const [savedSoundscapes, setSavedSoundscapes] = useState([]);
+  const [previousMixState, setPreviousMixState] = useState(null);
+  const [lastAiMix, setLastAiMix] = useState(null);
   const audioRefs = useRef({});
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const gainNodesRef = useRef({});
   const sourceNodesRef = useRef({});
 
+  // Lazy initialize AudioContext on user interaction
+  const initAudioContext = () => {
+    if (audioContextRef.current) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+      analyser.connect(ctx.destination);
+      audioContextRef.current = ctx;
+      analyserRef.current = analyser;
+      
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(e => console.warn("Failed to resume AudioContext during init:", e));
+      }
+    } catch(e) {
+      console.error("Failed to initialize AudioContext:", e);
+    }
+  };
+
   // Export Modal States
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [downloadDuration, setDownloadDuration] = useState(3);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Apply LLM generated soundscape
+  const handleApplyAiMix = ({ title, description, volumes: newVolumes, active_sounds: newActiveSounds }) => {
+    initAudioContext();
+    // Snapshot current state for revert
+    setPreviousMixState({
+      volumes: { ...volumes },
+      activeSoundIds: [...activeSoundIds],
+    });
+    setLastAiMix({ title, description });
+
+    const newVols = { ...ALL_SOUNDS_FLAT.reduce((acc, sound) => ({ ...acc, [sound.id]: 0 }), {}) };
+    Object.entries(newVolumes).forEach(([id, vol]) => {
+      newVols[id] = vol;
+    });
+
+    setVolumes(newVols);
+    setActiveSoundIds(newActiveSounds || Object.keys(newVolumes));
+    setIsPlaying(true);
+  };
+
+  const handleRevertMix = () => {
+    if (!previousMixState) return;
+    setVolumes(previousMixState.volumes);
+    setActiveSoundIds(previousMixState.activeSoundIds);
+    setPreviousMixState(null);
+  };
 
   // DB Fetch
   useEffect(() => {
@@ -869,7 +951,8 @@ export default function AudioAmbientApp() {
 
   const handleSaveMix = async () => {
     if(activeSoundIds.length === 0) return alert("Mixer is empty! Add sounds first.");
-    const title = prompt("Enter a name for your custom Soundscape:");
+    const defaultTitle = lastAiMix?.title || "";
+    const title = prompt("Enter a name for your custom Soundscape:", defaultTitle);
     if (!title) return;
     
     // Pick generic aesthetic image
@@ -906,6 +989,7 @@ export default function AudioAmbientApp() {
   };
 
   const onLoadSoundscape = (soundscape) => {
+      initAudioContext();
       // Load saved state
       if (soundscape.active_sounds && soundscape.volumes) {
           const newVols = { ...ALL_SOUNDS_FLAT.reduce((acc, sound) => ({ ...acc, [sound.id]: 0 }), {}) };
@@ -919,20 +1003,8 @@ export default function AudioAmbientApp() {
       setIsPlaying(true); // Auto play
   };
 
-  // Audio Engine Hook — Web Audio API for visualizer
+  // Audio Engine Hook
   useEffect(() => {
-    // Create AudioContext and AnalyserNode (lazily, once)
-    const initAudioContext = () => {
-      if (audioContextRef.current) return;
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.8;
-      analyser.connect(ctx.destination);
-      audioContextRef.current = ctx;
-      analyserRef.current = analyser;
-    };
-
     ALL_SOUNDS_FLAT.forEach(sound => {
       const audio = new Audio(`/sounds/${sound.file}`);
       audio.loop = true;
@@ -941,20 +1013,7 @@ export default function AudioAmbientApp() {
       audioRefs.current[sound.id] = audio;
     });
 
-    // Set initial volumes
-    ['rain', 'ocean', 'forest'].forEach(id => {
-       handleVolumeChange(id, 50);
-    });
-
-    // Init audio context on first user interaction
-    const handleInteraction = () => {
-      initAudioContext();
-      document.removeEventListener('click', handleInteraction);
-    };
-    document.addEventListener('click', handleInteraction);
-
     return () => {
-      document.removeEventListener('click', handleInteraction);
       Object.values(audioRefs.current).forEach(audio => { audio.pause(); audio.src = ''; });
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close();
@@ -962,42 +1021,19 @@ export default function AudioAmbientApp() {
     };
   }, []);
 
-  // Volume sync — route through Web Audio API gain nodes
+  // Volume sync — control HTML5 Audio volume and playback state directly (bypassing CORS-restricted Web Audio context)
   useEffect(() => {
-    const ctx = audioContextRef.current;
-    const analyser = analyserRef.current;
-
     Object.keys(volumes).forEach(id => {
       const audio = audioRefs.current[id];
       const volumeLevel = volumes[id] / 100;
       if (!audio) return;
 
-      // Connect to Web Audio API graph if context is ready and not yet connected
-      if (ctx && analyser && !sourceNodesRef.current[id]) {
-        try {
-          const source = ctx.createMediaElementSource(audio);
-          const gain = ctx.createGain();
-          source.connect(gain);
-          gain.connect(analyser);
-          sourceNodesRef.current[id] = source;
-          gainNodesRef.current[id] = gain;
-        } catch(e) {
-          // Already connected — ignore
-        }
-      }
-
-      // Set volume via GainNode if available, otherwise fallback
-      const gainNode = gainNodesRef.current[id];
-      if (gainNode) {
-        gainNode.gain.value = volumeLevel;
-      } else {
-        audio.volume = volumeLevel;
-      }
+      // Set volume directly on the media element
+      audio.volume = volumeLevel;
 
       // Play/pause logic
       if (isPlaying && volumeLevel > 0) {
         if (audio.paused) {
-          if (ctx && ctx.state === 'suspended') ctx.resume();
           audio.play().catch(e => console.warn(`Autoplay prevented for ${id}`, e));
         }
       } else {
@@ -1007,13 +1043,14 @@ export default function AudioAmbientApp() {
   }, [volumes, isPlaying]);
 
   const handleVolumeChange = (id, newVolume) => {
+    initAudioContext();
     setVolumes(prev => ({ ...prev, [id]: newVolume }));
     if (!isPlaying && newVolume > 0) setIsPlaying(true);
     if (newVolume > 0) setActiveSoundIds(prev => prev.includes(id) ? prev : [...prev, id]);
   };
 
   const togglePlay = () => {
-    if (isPlaying) Object.values(audioRefs.current).forEach(audio => audio.pause());
+    initAudioContext();
     setIsPlaying(!isPlaying);
   };
 
@@ -1091,7 +1128,10 @@ export default function AudioAmbientApp() {
     removeFromMixer: (id) => { setActiveSoundIds(p=>p.filter(s=>s!==id)); handleVolumeChange(id, 0); },
     onExportClick: () => setIsExportModalOpen(true),
     onSaveMix: handleSaveMix,
-    analyserRef
+    analyserRef,
+    onApplyAiMix: handleApplyAiMix,
+    onRevertMix: handleRevertMix,
+    canRevert: Boolean(previousMixState)
   };
 
   return (
@@ -1101,7 +1141,7 @@ export default function AudioAmbientApp() {
 
       {currentView !== 'home' && <SideNavBar currentView={currentView} setCurrentView={setCurrentView} />}
       
-      {currentView === 'home' && <HomePage navigateToMixer={() => setCurrentView('mixer')} navigateToLibrary={() => setCurrentView('library')} onLoadPreset={(preset) => { const newVols = { ...ALL_SOUNDS_FLAT.reduce((acc, s) => ({ ...acc, [s.id]: 0 }), {}) }; const ids = []; Object.entries(preset.sounds).forEach(([id, vol]) => { newVols[id] = vol; ids.push(id); }); setVolumes(newVols); setActiveSoundIds(ids); setCurrentView('mixer'); setIsPlaying(true); }} />}
+      {currentView === 'home' && <HomePage navigateToMixer={() => setCurrentView('mixer')} navigateToLibrary={() => setCurrentView('library')} onLoadPreset={(preset) => { initAudioContext(); const newVols = { ...ALL_SOUNDS_FLAT.reduce((acc, s) => ({ ...acc, [s.id]: 0 }), {}) }; const ids = []; Object.entries(preset.sounds).forEach(([id, vol]) => { newVols[id] = vol; ids.push(id); }); setVolumes(newVols); setActiveSoundIds(ids); setCurrentView('mixer'); setIsPlaying(true); }} />}
       {currentView === 'library' && <LibraryPage setCurrentView={setCurrentView} savedSoundscapes={savedSoundscapes} onLoadSoundscape={onLoadSoundscape} />}
       {currentView === 'mixer' && <MixerPage {...mixerProps} />}
 
@@ -1129,12 +1169,13 @@ export default function AudioAmbientApp() {
                             </div>
                         </div>
                         <div className="relative py-2">
-                            <input disabled={isGenerating} className="zen-slider w-full appearance-none bg-transparent cursor-pointer relative z-10 h-10" max="5" min="1" type="range" value={downloadDuration} onChange={(e) => setDownloadDuration(parseInt(e.target.value))} />
+                            <input disabled={isGenerating} className="zen-slider w-full appearance-none bg-transparent cursor-pointer relative z-10 h-10" max="10" min="1" type="range" value={downloadDuration} onChange={(e) => setDownloadDuration(parseInt(e.target.value))} />
                             <div className="absolute w-full h-[2px] bg-outline-variant/30 left-0 top-1/2 -translate-y-1/2 rounded-full pointer-events-none"></div>
-                            <div className="absolute h-[2px] bg-primary left-0 top-1/2 -translate-y-1/2 rounded-full pointer-events-none glow-track" style={{ width: `${(downloadDuration - 1) * 25}%` }}></div>
+                            <div className="absolute h-[2px] bg-primary left-0 top-1/2 -translate-y-1/2 rounded-full pointer-events-none glow-track" style={{ width: `${((downloadDuration - 1) / 9) * 100}%` }}></div>
                             <div className="absolute -bottom-2 w-full flex justify-between px-0.5">
                                 <span className="font-label text-[10px] text-on-surface/20">1m</span>
                                 <span className="font-label text-[10px] text-on-surface/20">5m</span>
+                                <span className="font-label text-[10px] text-on-surface/20">10m</span>
                             </div>
                         </div>
                     </div>
