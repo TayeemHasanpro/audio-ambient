@@ -1,195 +1,134 @@
-# Internal Memo — AudioAmbient Platform
+# Product & Architecture Memo — AudioAmbient Platform
 
-**To:** Engineering & Product  
-**Date:** April 14, 2026  
-**Subject:** System Architecture Review & Strategic Expansion Roadmap  
-**Classification:** Internal
-
----
-
-## Executive Summary
-
-AudioAmbient has been successfully evolved from a static ambient sound player into a **full-stack, AI-powered soundscape platform**. This memo documents the current architecture, the reasoning behind key technical decisions, and a structured roadmap for future expansion. The platform is production-ready and deployed on a globally distributed edge network.
+**To:** Leadership, Product & Engineering  
+**Date:** September 2026  
+**Subject:** Full Platform Capabilities & Technical Architecture Overview  
+**Classification:** Product Documentation  
 
 ---
 
-## 1. Current System Architecture
+## 1. Executive Summary
 
-### 1.1 High-Level Overview
+**AudioAmbient** is an advanced, full-stack atmospheric audio platform designed to help users curate, synthesize, and personalize acoustic sanctuaries for deep focus, rest, meditation, and creative flow.
+
+The platform combines a **58-track curated audio library**, a **real-time browser audio mixing engine** with circular waveform visualization, a **Google Gemini-powered acoustic copilot** that translates natural language prompts into balanced ambient mixes, **Firebase cloud persistence** for community soundscapes, and an **offline studio rendering engine** that exports up to 10-minute uncompressed WAV files.
+
+---
+
+## 2. What AudioAmbient Does (Core Features)
+
+### 2.1. Interactive Multi-Track Audio Mixer Deck
+At the heart of AudioAmbient is a digital mixing desk operating entirely inside the browser:
+- **58 High-Definition Sound Layers:** Spanning Nature, Ambient synthesized drones, Mechanical rhythms, and Crowd textures.
+- **Granular Volume Modulators:** Horizontal tactile sliders (0–100%) for every active layer with real-time gain syncing.
+- **Dynamic Sound Browser:** Fast search and category filtering to seamlessly discover and add layers into the mix.
+- **Individual Track Muting & Soloing:** Quick toggle between active volume and muted states with state memory.
+- **Transport Bar Controls:** Master Play/Pause, clear-all deck resets, sound browser drawer, and cloud save triggers.
+- **Dual Responsive Layout:** Full two-column mixing deck on desktop and an optimized bottom-sheet mobile experience.
+
+### 2.2. AI Soundscape Studio (LLM Ambient Copilot)
+Located directly on the mixer deck, the AI Studio enables users to speak or type natural language atmosphere descriptions:
+- **Natural Language Translation:** Describe any atmosphere (e.g. *"Midnight rainy cafe in Tokyo with gentle typing"*, *"Campfire under starry sky with howling wind"*, *"Deep space meditation with ancient bowls"*).
+- **Library-Aware Acoustic Balancing:** Powered by **Google Gemini 2.5 Flash**, the AI analyzes the 58 available tracks and composes a 3- to 6-layer acoustic scene balancing base drones (30–55%), focal textures (60–85%), and subtle accents (15–35%).
+- **Instant Deck Sync & Auto-Play:** When a soundscape is generated, the mixer sliders animate into position, inactive layers are cleared, and playback starts immediately.
+- **Atmospheric Context:** Generates an evocative soundscape title (e.g. *"Cozy Cafe Rain"*, *"Cosmic Serenity"*) and a poetic description of the environment.
+- **Quick Inspiration Chips:** One-tap suggestion chips (*Rainy Coffee Shop*, *Deep Space Drift*, *Forest River*, *Thunderstorm Cabin*, *Zen Sanctuary*, *Midnight Code Flow*).
+- **Remix & Revert:** Single-click buttons to request alternative variations or revert to the previous mix.
+
+### 2.3. Web Audio Waveform Visualizer
+- **Circular Web Audio Radar:** An interactive HTML5 Canvas visualizer that animates audio frequencies in real-time.
+- Reactively pulses with audio energy, reflecting current playback states with glow effects.
+
+### 2.4. Studio-Grade Audio Export Engine (Up to 10 Minutes)
+- **Client-Side Synthesis:** Uses the browser's native `OfflineAudioContext` to mix and render active tracks into a single stereo master file without server processing.
+- **High-Fidelity Audio:** Renders uncompressed, broadcast-quality **16-bit 44.1kHz stereo WAV files**.
+- **Adjustable Duration:** Zen range slider allowing export lengths from **1 minute up to 10 minutes** (600 seconds of seamless looping).
+- **Direct Download:** Packages the rendered audio buffer into a downloadable `.wav` file (e.g. `AudioAmbient_Mix_10min.wav`).
+
+### 2.5. Cloud Sanctuary Library (Firebase Firestore)
+- **Soundscape Preservation:** One-click saving of custom or AI-generated soundscapes to Firebase Cloud Firestore.
+- **Title Pre-Filling:** Automatically suggests the AI-generated title when saving AI soundscapes.
+- **Sanctuary Gallery:** A dedicated visual library page showcasing recent soundscapes with tags (#Focus, #DeepSleep, #Rain), cover photography, and track breakdowns.
+- **One-Tap Soundscape Replay:** Instantly loads saved soundscapes into the mixer and resumes playback.
+
+### 2.6. Curated Presets & Bento Experience
+- **One-Tap Soundscape Cards:** 10 pre-engineered soundscapes for immediate listening (*Deep Focus*, *Rainy Morning*, *Night Forest*, *Space Drift*, *City Commute*, *Summer Meadow*, *Study Lounge*, *Storm Watch*, *Reading Nook*, *Cozy Cabin*).
+- **Tag Filtering:** Filter presets by intent (*Work*, *Relax*, *Sleep*, *Vibe*).
+- **Atmospheric Bento Showcase:** Highlights neural-adaptive rhythm features, organic field textures, and responsive layout highlights.
+
+---
+
+## 3. The 58-Sound Audio Library
+
+| Category | Track Count | Featured Sounds |
+|:---|:---:|:---|
+| **Nature** | 22 | Rain on Leaves, Rain on Tent, Rain on Umbrella, Rain on Window, Soft Rain, Rain & Thunders, Peaceful River, Waterfall, Spring Birds, Crows, Ducks on Field, Frogs Ambience, Howling Polar Wind, Winter Wind, Rustling Leaves, Seagulls in Town, Wooden Windbells, Walking on Rocks/Snow/Grass/Gravel, Street After Rain |
+| **Ambient** | 15 | Low Hum, Magnetic Hum, Muted Dimension, Pink Noise, Static White Noise, Space Drift, Tibetan Bowl, Ethereal Loop, Synth Field Hum, Energy Hum, Delta Range, E-Note, Vinyl Warm Noise, Washy Noise, Radio Static |
+| **Mechanical** | 11 | Courtyard AC, Steam Engine, Subway Journey, Washing Machine, Windscreen Wiper, Helicopter Flight, Typewriter, Laptop Typing, Grandfather Clock, Slow Traffic, Distant Traffic |
+| **Crowd** | 16 | Public Gym, Supermarket, Quiet Library, Rowing Boat, Sizzling Oil, Small Chimes, Underwater Bubbles, Distant Fireworks, Footsteps & Clothes, Hair Cut, Happy Dog Indoor, Tin Roof Drips, Pencil Writing, Sweeping Pavement, Glass Rolling, Newspaper Pages |
+
+---
+
+## 4. Technical Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      CLIENT (Browser)                   │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐ │
-│  │  Home Page  │  │  Library View│  │  Mixer Deck    │ │
-│  │  (Landing)  │  │  (Supabase)  │  │  (Audio Engine)│ │
-│  └─────────────┘  └──────────────┘  └────────────────┘ │
-│                           │                │            │
-│  ┌────────────────────────────────────────────────────┐ │
-│  │              Audio Copilot (Gemini AI)             │ │
-│  │  Quick Prompts → useChat → Stream → Sliders Move  │ │
-│  └────────────────────────────────────────────────────┘ │
-└─────────────────────────────┬───────────────────────────┘
-                              │ HTTPS
-┌─────────────────────────────▼───────────────────────────┐
-│              NEXT.JS APP ROUTER (Vercel Edge)            │
-│  ┌──────────────────┐    ┌─────────────────────────────┐│
-│  │ /api/soundscapes │    │       /api/chat             ││
-│  │ GET  — fetch DB  │    │  POST — stream Gemini 1.5  ││
-│  │ POST — Zod valid │    │  toolChoice: required       ││
-│  │      + RLS insert│    │  Rate: 20 req/min/IP       ││
-│  └──────────────────┘    └─────────────────────────────┘│
-└──────┬──────────────────────────────┬────────────────────┘
-       │                              │
-┌──────▼──────┐              ┌────────▼────────────────────┐
-│  Supabase   │              │      Google AI API          │
-│  PostgreSQL │              │    Gemini 1.5 Flash         │
-│  + RLS      │              │    Tool Calling (JSON)      │
-└─────────────┘              └─────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           CLIENT (Browser)                              │
+│  ┌──────────────┐  ┌───────────────┐  ┌──────────────────────────────┐  │
+│  │  Home Page   │  │  Library Page │  │         Mixer Deck           │  │
+│  │ (10 Presets) │  │  (Firestore)  │  │ (58 Stems + Wave Visualizer) │  │
+│  └──────────────┘  └───────────────┘  └──────────────┬───────────────┘  │
+│                                                      │                  │
+│                               ┌──────────────────────▼───────────────┐  │
+│                               │         AI Soundscape Studio         │  │
+│                               │   Prompt Box + Suggestion Chips      │  │
+│                               └──────────────────────┬───────────────┘  │
+│                                                      │                  │
+│  ┌───────────────────────────────────────────────────┼───────────────┐  │
+│  │ Audio Engine: HTML5 Audio + OfflineAudioContext   │ (WAV Export)  │  │
+│  └───────────────────────────────────────────────────┼───────────────┘  │
+└──────────────────────────────────────────────────────┼──────────────────┘
+                                                       │ HTTPS
+┌──────────────────────────────────────────────────────▼──────────────────┐
+│                   NEXT.JS 16 APP ROUTER (Server Runtime)                │
+│  ┌──────────────────────────────┐    ┌───────────────────────────────┐  │
+│  │      /api/soundscapes        │    │          /api/chat            │  │
+│  │  GET  — Query Firestore DB   │    │  POST — Google Gemini 2.5     │  │
+│  │  POST — Zod validate + Save  │    │  Rate Limit: 20 req/min/IP    │  │
+│  └──────────────┬───────────────┘    │  Structured JSON Sound Matrix │  │
+│                 │                    └───────────────┬───────────────┘  │
+└─────────────────┼────────────────────────────────────┼──────────────────┘
+                  │                                    │
+           ┌──────▼──────┐                      ┌──────▼──────┐
+           │  Firebase   │                      │  Google AI  │
+           │  Firestore  │                      │ Gemini 2.5  │
+           └─────────────┘                      └─────────────┘
 ```
 
-### 1.2 Technology Stack
-
-| Layer | Technology | Version | Purpose |
-|-------|-----------|---------|---------|
-| Framework | Next.js (App Router) | 16.2.3 | SSR, API routes, edge deployment |
-| Styling | Tailwind CSS | 3.x | Utility-first design system |
-| Database | Supabase (PostgreSQL) | — | Cloud-hosted relational DB with RLS |
-| DB Client | `@supabase/supabase-js` | 2.x | Typed DB access, two-tier client |
-| AI Runtime | Vercel AI SDK | `ai@6.x` | Streaming, tool calling, react hooks |
-| AI Model | Google Gemini 1.5 Flash | — | LLM for soundscape generation |
-| AI Provider | `@ai-sdk/google` | 3.x | Gemini API adapter |
-| AI React Hook | `@ai-sdk/react` | 3.x | `useChat`, streaming to UI |
-| Validation | Zod | 3.x | Runtime schema enforcement |
-| Deployment | Vercel | — | CDN + serverless functions |
-| Audio Engine | Web Audio API | Native | Browser-native sound mixing |
-| Audio Assets | MP3 @ 128kbps | 38 files | Optimized from original WAV sources |
-
-### 1.3 Data Model
-
-```sql
--- soundscapes table (Supabase PostgreSQL)
-CREATE TABLE soundscapes (
-  id           SERIAL PRIMARY KEY,
-  title        VARCHAR(255)              NOT NULL,
-  tag          VARCHAR(100)              DEFAULT 'Custom',
-  image        TEXT                      NOT NULL,
-  volumes      JSONB                     NOT NULL,  -- { "rain": 80, "brown": 40 }
-  active_sounds JSONB                    NOT NULL,  -- ["rain", "brown"]
-  created_at   TIMESTAMPTZ               DEFAULT NOW()
-);
-
--- Row Level Security
-ALTER TABLE soundscapes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public can read"  ON soundscapes FOR SELECT USING (true);
-CREATE POLICY "public can write" ON soundscapes FOR INSERT WITH CHECK (true);
-```
-
-### 1.4 AI Tool Calling Flow
-
-```
-User types / taps chip
-        ↓
-useChat.append({ role: 'user', content })
-        ↓
-POST /api/chat  [rate limited: 20/min/IP]
-        ↓
-streamText({ model: gemini-1.5-flash, toolChoice: 'required' })
-        ↓
-Gemini analyzes mood → calls setMixerLevels({ volumes: {...} })
-        ↓
-onToolCall fires on client → applyMixerLevels(volumes)
-        ↓
-React state update → Audio Web APIs receive new gain values
-        ↓
-Sliders animate. Music changes. User hears new soundscape.
-```
-
-### 1.5 Security Posture
-
-| Domain | Measure | Status |
-|--------|---------|--------|
-| Secrets | `.env.local`, never committed | ✅ |
-| DB Access | Dual client (anon vs service role) | ✅ |
-| DB Policy | Row Level Security with SELECT/INSERT policies | ✅ |
-| API Input | Zod schema validation on all POST routes | ✅ |
-| AI Cost | Per-IP rate limiting + `maxTokens: 500` cap | ✅ |
-| Error Leaks | Generic error messages to clients, detailed server logs | ✅ |
-| HTTP Headers | `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` | ✅ |
-| Dependencies | `npm audit` → 0 vulnerabilities | ✅ |
-| Credentials | `db_setup.js` gitignored, no secrets in any committed file | ✅ |
+### 4.1. Core Tech Stack
+- **Framework:** Next.js 16.2.3 (App Router with Turbopack)
+- **Frontend Engine:** React 19.2.1
+- **Styling:** Tailwind CSS 4 with custom glassmorphism and cyan design system
+- **AI Intelligence:** Google Gemini 2.5 Flash via REST API (Structured JSON Mode)
+- **Database:** Google Cloud Firebase Firestore Admin SDK
+- **Audio Processing:** Browser-native Web Audio API (`AudioContext`, `OfflineAudioContext`, `AnalyserNode`)
+- **Data Validation:** Zod 4
 
 ---
 
-## 2. Future Expansion Roadmap
+## 5. Security Posture
 
-### Phase 1 — Authentication & User Ownership *(Recommended Next)*
-**Timeline: 2–3 weeks**
-
-The current model lets anyone write to the database. Adding user identity enables personal libraries and data privacy.
-
-- Integrate **Supabase Auth** (Email + Google OAuth)
-- Add `user_id` column to `soundscapes` table
-- Update RLS policies: users can only `DELETE` their own rows
-- Add a **"My Library"** tab showing only the current user's saved mixes
-- Add **profile page** with saved sound statistics
-
-### Phase 2 — AI Agent Enhancement
-**Timeline: 1–2 weeks**
-
-The AI Copilot currently does one-shot soundscape generation. Expanding to a multi-turn memory agent unlocks dramatically richer experiences.
-
-- **Session memory**: Feed the last user state (currently active sounds + volumes) into the system prompt on each request so the AI can iterate (*"make it more intense"*, *"add thunder"*)
-- **Emotion tracking**: Track what mixes a user plays most and surface personalized recommendations
-- **AI-generated mix names + images**: On save, use Gemini to auto-generate a title and DALL-E to generate a unique cover image for the soundscape
-- **Mood journaling**: Let users log how they felt before/after a soundscape session; feed this back to the AI for personalization
-
-### Phase 3 — Content Expansion
-**Timeline: 3–4 weeks**
-
-- **Sound Pack DLC**: Introduce paid sound packs (binaural frequencies, premium nature recordings)
-- **User-uploaded sounds**: Allow users to upload their own short ambient loops (stored in Supabase Storage)
-- **Scheduled Soundscapes**: *"Play Forest Walk every day at 7am for my morning routine"* via Vercel Cron Jobs
-- **Soundscape sharing**: Shareable URLs (e.g., `audioambient.app/s/abc123`) that load a specific community mix
-
-### Phase 4 — Monetization & Subscriptions
-**Timeline: 4–6 weeks**
-
-- **Stripe integration**: Pro tier ($9/month) unlocking premium sound packs, unlimited saves, and AI Copilot
-- **Usage gating**: Free users limited to 5 saved soundscapes and 10 AI requests/day
-- **Lifetime license**: One-time payment model as shown in the existing pricing UI
-- **Team workspaces**: Shared soundscape libraries for remote teams or coworking spaces
-
-### Phase 5 — Native App & Offline
-**Timeline: 6–8 weeks**
-
-- **Progressive Web App (PWA)**: Add `manifest.json` + service worker for installable, offline-capable mixed playback from cache
-- **React Native / Expo**: Share business logic across web and mobile; native iOS/Android apps
-- **Background audio**: True background playback even when the screen is off (system audio session)
+1. **Credentials Isolation:** All secrets (`FIREBASE_PRIVATE_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`) reside in `.env.local` and are never exposed to browser bundles.
+2. **Rate Limiting:** `/api/chat` enforces per-IP request throttling (20 req/min) to prevent bill exhaustion and automated scraping.
+3. **Sound Catalog Whitelisting:** Gemini outputs are strictly sanitized against the internal 58-sound ID catalog; invalid IDs are dropped before client delivery.
+4. **Input Sanitization:** All API endpoints validate payloads with strict Zod schemas.
+5. **Security Headers:** HTTP headers configured in `next.config.mjs` (`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`).
 
 ---
 
-## 3. Known Technical Debt
+## 6. Summary of Value
 
-| Item | Priority | Notes |
-|------|----------|-------|
-| In-memory rate limiting | Medium | Resets on serverless cold start; replace with Upstash Redis for persistent rate tracking |
-| No pagination on Library | Low | Will degrade as soundscape count grows; implement cursor-based pagination |
-| Anonymous inserts | High | No spam protection yet beyond Zod validation; blocked by Phase 1 (Auth) |
-| SSL bypass in db_setup.js | Low | Local script only, not in production code; acceptable until replaced by Supabase dashboard management |
-| No error boundaries | Medium | A component crash surfaces as a blank page; add React `<ErrorBoundary>` wrappers |
-
----
-
-## 4. Infrastructure Costs (Estimated)
-
-| Service | Free Tier | Projected Cost at Scale |
-|---------|-----------|------------------------|
-| Vercel | 100GB bandwidth/month | ~$20/month (Pro) |
-| Supabase | 500MB DB, 2GB bandwidth | ~$25/month (Pro) |
-| Google Gemini | 1M tokens/day free | ~$0.075 per 1M tokens |
-| Total at launch | **$0** | **~$45–60/month** |
-
----
-
-*AudioAmbient — Built with Next.js, Supabase, and Google Gemini. Deployed globally on Vercel.*
+AudioAmbient bridges the gap between static ambient noise players and dynamic audio generation. Instead of forcing users to manually audition and tweak 58 sliders, the platform offers three levels of engagement:
+1. **Instant Curated Presets** for immediate one-click focus.
+2. **Generative Natural Language AI** to compose atmospheric soundscapes from thought alone.
+3. **Professional Fine-Tuning & WAV Studio Export** for power users who want exact volume balances saved to the cloud or exported for offline listening.
